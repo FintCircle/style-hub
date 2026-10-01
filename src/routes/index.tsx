@@ -23,7 +23,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Feed() {
-  const rushCount = posts.filter((p) => p.rushEndsAt && p.rushEndsAt > Date.now()).length;
+  const rushCount = posts.filter((p) => p.rushEndsAt).length;
 
   return (
     <div className="min-h-screen bg-background pb-24">

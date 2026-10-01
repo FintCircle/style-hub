@@ -2,13 +2,16 @@ import { useState } from "react";
 import { MessageSquareQuote, Timer } from "lucide-react";
 import type { Post } from "@/lib/lebeho-data";
 import { VoteBlock } from "./VoteBlock";
-import { Countdown } from "./Countdown";
+import { Countdown, useCountdown } from "./Countdown";
 
 export function PostCard({ post }: { post: Post }) {
   const [open, setOpen] = useState(false);
   const [thoughts, setThoughts] = useState(post.thoughts);
   const [draft, setDraft] = useState("");
-  const live = post.rushEndsAt ? post.rushEndsAt > Date.now() : false;
+  const remaining = useCountdown(post.rushEndsAt);
+  // null until hydration: render the Rush badge for any post that has a window,
+  // then drop it once the clock confirms the window has closed.
+  const live = Boolean(post.rushEndsAt) && (remaining === null || remaining > 0);
 
   return (
     <article className="border-b border-border px-5 py-8">
