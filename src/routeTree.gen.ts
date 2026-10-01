@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CreateRouteImport } from './routes/create'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as RushRouteImport } from './routes/rush'
@@ -17,6 +18,11 @@ import { Route as RushRouteImport } from './routes/rush'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreateRoute = CreateRouteImport.update({
+  id: '/create',
+  path: '/create',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -37,12 +43,14 @@ const RushRoute = RushRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/create': typeof CreateRoute
   '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/profile' | '/reels' | '/rush'
+  fullPaths: '/' | '/create' | '/profile' | '/reels' | '/rush'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/profile' | '/reels' | '/rush'
-  id: '__root__' | '/' | '/profile' | '/reels' | '/rush'
+  to: '/' | '/create' | '/profile' | '/reels' | '/rush'
+  id: '__root__' | '/' | '/create' | '/profile' | '/reels' | '/rush'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CreateRoute: typeof CreateRoute
   ProfileRoute: typeof ProfileRoute
   ReelsRoute: typeof ReelsRoute
   RushRoute: typeof RushRoute
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/create': {
+      id: '/create'
+      path: '/create'
+      fullPath: '/create'
+      preLoaderRoute: typeof CreateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CreateRoute: CreateRoute,
   ProfileRoute: ProfileRoute,
   ReelsRoute: ReelsRoute,
   RushRoute: RushRoute,
