@@ -16,6 +16,8 @@ export const Route = createFileRoute("/create")({
         property: "og:description",
         content: "Text, photos, votes and Rush Hour countdowns — or a 60-second reel.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Create,

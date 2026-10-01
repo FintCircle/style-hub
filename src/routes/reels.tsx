@@ -14,6 +14,8 @@ export const Route = createFileRoute("/reels")({
       },
       { property: "og:title", content: "Reels — LeBeHo" },
       { property: "og:description", content: "Short fashion video, full screen, nothing else." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Reels,
