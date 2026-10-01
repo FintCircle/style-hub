@@ -25,7 +25,7 @@ export const Route = createFileRoute("/rush")({
 
 function RushCard({ post }: { post: Post }) {
   const remaining = useCountdown(post.rushEndsAt);
-  const over = remaining <= 0;
+  const over = remaining !== null && remaining <= 0;
 
   return (
     <article className="rounded-2xl border border-rush-foreground/25 bg-black/10 p-5">
