@@ -38,7 +38,7 @@ function AboutPage() {
       <InfoSection title="Watch fashion.">
         <p>Reels are the fun side of LeBeHo.</p>
         <p>Up to 60 seconds. Outfits, styling, ideas, discoveries, transformations, opinions or simply something worth showing.</p>
-        <p>No complicated interactions. Just watch, like, and keep moving.</p>
+        <p>No complicated interactions. Watch. Like. Keep moving.</p>
       </InfoSection>
 
       <InfoSection title="Three sides. One community.">
