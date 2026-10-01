@@ -18,6 +18,8 @@ export const Route = createFileRoute("/rush")({
         property: "og:description",
         content: "Time-limited fashion advice. Vote fast, they're leaving in minutes.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: RushHour,

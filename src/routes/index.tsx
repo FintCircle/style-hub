@@ -1,7 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { posts } from "@/lib/lebeho-data";
 import { PostCard } from "@/components/lebeho/PostCard";
 import { BottomNav } from "@/components/lebeho/BottomNav";
+import { FeedHeader } from "@/components/lebeho/FeedHeader";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -17,28 +18,17 @@ export const Route = createFileRoute("/")({
         property: "og:description",
         content: "Seek opinions, share fashion thoughts, and vote on looks in a fashion-only feed.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: Feed,
 });
 
 function Feed() {
-  const rushCount = posts.filter((p) => p.rushEndsAt).length;
-
   return (
     <div className="min-h-screen bg-background pb-24">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/90 px-5 py-4 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-xl items-center justify-between">
-          <h1 className="font-editorial text-2xl tracking-tight">LeBeHo</h1>
-          <Link
-            to="/rush"
-            className="flex items-center gap-2 rounded-full border border-rush/40 px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] text-rush"
-          >
-            <span className="size-1.5 rounded-full bg-rush rush-pulse" />
-            {rushCount} in Rush Hour
-          </Link>
-        </div>
-      </header>
+      <FeedHeader />
 
       <div className="mx-auto max-w-xl">
         <p className="px-5 pt-8 text-xs uppercase tracking-[0.3em] text-muted-foreground">

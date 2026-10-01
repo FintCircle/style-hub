@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Keep informational pages on dedicated routes and render them through the shared InfoPage shell so navigation and editorial presentation stay consistent.
