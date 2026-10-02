@@ -49,7 +49,9 @@ function Create() {
   const [done, setDone] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const reelInputRef = useRef<HTMLInputElement>(null);
-  const selectedMediaRef = useRef<{ photos: MediaPreview[]; reel?: MediaPreview }>({ photos: [] });
+  const selectedMediaRef = useRef<{ photos: MediaPreview[]; reel?: MediaPreview | undefined }>({
+    photos: [],
+  });
   const normalizedHashtag = normalizeHashtag(hashtagInput);
   const matchingHashtags = normalizedHashtag
     ? hashtags.filter((hashtag) => hashtag.slug.startsWith(normalizedHashtag))

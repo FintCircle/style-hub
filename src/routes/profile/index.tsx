@@ -59,12 +59,6 @@ const initialProfile: ProfileDetails = {
   x: me.socials.x,
   about: me.about,
   avatar: me.avatar,
-  website: "",
-  instagram: "",
-  tiktok: "",
-  x: "",
-  about: "",
-  avatar: "",
 };
 
 function Profile() {
