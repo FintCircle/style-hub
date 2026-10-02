@@ -19,6 +19,9 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as RushRouteImport } from './routes/rush'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as PostsPostIdRouteImport } from './routes/posts/$postId'
+import { Route as ProfileIndexRouteImport } from './routes/profile/index'
+import { Route as ProfileHandleRouteImport } from './routes/profile/$handle'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +73,21 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PostsPostIdRoute = PostsPostIdRouteImport.update({
+  id: '/posts/$postId',
+  path: '/posts/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ProfileRoute,
+} as any)
+const ProfileHandleRoute = ProfileHandleRouteImport.update({
+  id: '/$handle',
+  path: '/$handle',
+  getParentRoute: () => ProfileRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -78,10 +96,13 @@ export interface FileRoutesByFullPath {
   '/guidelines': typeof GuidelinesRoute
   '/join': typeof JoinRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
   '/terms': typeof TermsRoute
+  '/posts/$postId': typeof PostsPostIdRoute
+  '/profile/$handle': typeof ProfileHandleRoute
+  '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -90,10 +111,12 @@ export interface FileRoutesByTo {
   '/guidelines': typeof GuidelinesRoute
   '/join': typeof JoinRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
   '/terms': typeof TermsRoute
+  '/posts/$postId': typeof PostsPostIdRoute
+  '/profile/$handle': typeof ProfileHandleRoute
+  '/profile': typeof ProfileIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -103,10 +126,13 @@ export interface FileRoutesById {
   '/guidelines': typeof GuidelinesRoute
   '/join': typeof JoinRoute
   '/privacy': typeof PrivacyRoute
-  '/profile': typeof ProfileRoute
+  '/profile': typeof ProfileRouteWithChildren
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
   '/terms': typeof TermsRoute
+  '/posts/$postId': typeof PostsPostIdRoute
+  '/profile/$handle': typeof ProfileHandleRoute
+  '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +147,9 @@ export interface FileRouteTypes {
     | '/reels'
     | '/rush'
     | '/terms'
+    | '/posts/$postId'
+    | '/profile/$handle'
+    | '/profile/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -129,10 +158,12 @@ export interface FileRouteTypes {
     | '/guidelines'
     | '/join'
     | '/privacy'
-    | '/profile'
     | '/reels'
     | '/rush'
     | '/terms'
+    | '/posts/$postId'
+    | '/profile/$handle'
+    | '/profile'
   id:
     | '__root__'
     | '/'
@@ -145,6 +176,9 @@ export interface FileRouteTypes {
     | '/reels'
     | '/rush'
     | '/terms'
+    | '/posts/$postId'
+    | '/profile/$handle'
+    | '/profile/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -154,10 +188,11 @@ export interface RootRouteChildren {
   GuidelinesRoute: typeof GuidelinesRoute
   JoinRoute: typeof JoinRoute
   PrivacyRoute: typeof PrivacyRoute
-  ProfileRoute: typeof ProfileRoute
+  ProfileRoute: typeof ProfileRouteWithChildren
   ReelsRoute: typeof ReelsRoute
   RushRoute: typeof RushRoute
   TermsRoute: typeof TermsRoute
+  PostsPostIdRoute: typeof PostsPostIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -232,8 +267,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/posts/$postId': {
+      id: '/posts/$postId'
+      path: '/posts/$postId'
+      fullPath: '/posts/$postId'
+      preLoaderRoute: typeof PostsPostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/': {
+      id: '/profile/'
+      path: '/'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof ProfileRoute
+    }
+    '/profile/$handle': {
+      id: '/profile/$handle'
+      path: '/$handle'
+      fullPath: '/profile/$handle'
+      preLoaderRoute: typeof ProfileHandleRouteImport
+      parentRoute: typeof ProfileRoute
+    }
   }
 }
+
+interface ProfileRouteChildren {
+  ProfileHandleRoute: typeof ProfileHandleRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
+}
+
+const ProfileRouteChildren: ProfileRouteChildren = {
+  ProfileHandleRoute: ProfileHandleRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
+}
+
+const ProfileRouteWithChildren =
+  ProfileRoute._addFileChildren(ProfileRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -242,10 +311,11 @@ const rootRouteChildren: RootRouteChildren = {
   GuidelinesRoute: GuidelinesRoute,
   JoinRoute: JoinRoute,
   PrivacyRoute: PrivacyRoute,
-  ProfileRoute: ProfileRoute,
+  ProfileRoute: ProfileRouteWithChildren,
   ReelsRoute: ReelsRoute,
   RushRoute: RushRoute,
   TermsRoute: TermsRoute,
+  PostsPostIdRoute: PostsPostIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
