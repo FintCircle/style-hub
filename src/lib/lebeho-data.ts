@@ -5,12 +5,22 @@ import reel1 from "@/assets/reel-1.jpg";
 
 export type VoteChoice = { id: string; label: string; votes: number };
 
+export type Reply = {
+  id: string;
+  author: string;
+  handle: string;
+  text: string;
+  time: string;
+};
+
+/** A public one-to-one conversation between the poster and a Thought author. */
 export type Thought = {
   id: string;
   author: string;
   handle: string;
   text: string;
   time: string;
+  replies?: Reply[];
 };
 
 export type Post = {
@@ -48,6 +58,22 @@ export const posts: Post[] = [
         handle: "@kemistyles",
         time: "4m",
         text: "A, but swap the gold clutch for something structured. The heels already carry the shine.",
+        replies: [
+          {
+            id: "r1",
+            author: "Amara Nsubuga",
+            handle: "@amara",
+            time: "3m",
+            text: "Good point — structured it is. I have a small black box bag that will do the job.",
+          },
+          {
+            id: "r2",
+            author: "Kemi O.",
+            handle: "@kemistyles",
+            time: "2m",
+            text: "Exactly. That will keep the whole look intentional.",
+          },
+        ],
       },
       {
         id: "t2",
@@ -72,6 +98,15 @@ export const posts: Post[] = [
         handle: "@damiwears",
         time: "20m",
         text: "Agreed — the volume only reads expensive when the shoe stays quiet.",
+        replies: [
+          {
+            id: "r3",
+            author: "Lina Carr",
+            handle: "@linacarr",
+            time: "15m",
+            text: "Yes — a simple toe gives the coat room to do all the talking.",
+          },
+        ],
       },
     ],
   },
@@ -168,3 +203,47 @@ export const me = {
   bio: "Fashion-curious. Mostly tailoring, occasionally chaos.",
   stats: { posts: 24, thoughts: 118, reels: 6 },
 };
+
+export type Profile = {
+  name: string;
+  handle: string;
+  bio: string;
+};
+
+const profileBios: Record<string, string> = {
+  "@amara": "Evenings out, considered details, and a good rooftop table.",
+  "@kemistyles": "Stylist with an eye for the finishing touch.",
+  "@noahfits": "Practical fits for wherever the day goes.",
+  "@linacarr": "Coats, proportion, and the long view.",
+  "@damiwears": "Quiet shoes and thoughtful volume.",
+  "@theo": "Tailoring, movement, and occasional unpopular takes.",
+  "@priyaedit": "A sharp edit is always the answer.",
+  "@junoo": "Getting dressed on a deadline.",
+  "@sade": "Thrifted pieces, patiently remade.",
+};
+
+export function getProfile(handle: string): Profile | undefined {
+  const normalizedHandle = `@${handle.replace(/^@/, "").toLowerCase()}`;
+  if (normalizedHandle === me.handle) return { name: me.name, handle: me.handle, bio: me.bio };
+
+  const author = posts
+    .flatMap((post) => [
+      { name: post.author, handle: post.handle },
+      ...post.thoughts.flatMap((thought) => [
+        { name: thought.author, handle: thought.handle },
+        ...(thought.replies ?? []).map((reply) => ({ name: reply.author, handle: reply.handle })),
+      ]),
+    ])
+    .find((person) => person.handle.toLowerCase() === normalizedHandle);
+
+  return (
+    author && {
+      ...author,
+      bio: profileBios[normalizedHandle] ?? "Sharing a point of view on LeBeHo.",
+    }
+  );
+}
+
+export function getPost(postId: string) {
+  return posts.find((post) => post.id === postId);
+}
