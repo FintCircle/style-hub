@@ -252,30 +252,109 @@ export const me = {
   name: "Johnson",
   handle: "@johnson",
   bio: "Fashion-curious. Mostly tailoring, occasionally chaos.",
-  stats: { posts: 24, thoughts: 118, reels: 6 },
+  website: "https://lebeho.example/johnson",
+  socials: { instagram: "@johnsonfits", tiktok: "@johnsonfits", x: "@johnsonfits" },
+  about:
+    "I am drawn to the precise parts of getting dressed: a good shoulder, a long trouser break, and the right amount of chaos. I share outfits, styling notes, and the occasional wardrobe experiment from a tailoring-first point of view.",
+  avatar: post3,
+  stats: { posts: 24, thoughts: 118, reels: 6, likes: 1240, boosts: 86 },
 };
 
 export type Profile = {
   name: string;
   handle: string;
   bio: string;
+  website?: string;
+  socials?: { instagram?: string; tiktok?: string; x?: string };
+  about?: string;
+  avatar?: string;
+  stats?: { posts: number; thoughts: number; reels: number; likes: number; boosts: number };
 };
 
-const profileBios: Record<string, string> = {
-  "@amara": "Evenings out, considered details, and a good rooftop table.",
-  "@kemistyles": "Stylist with an eye for the finishing touch.",
-  "@noahfits": "Practical fits for wherever the day goes.",
-  "@linacarr": "Coats, proportion, and the long view.",
-  "@damiwears": "Quiet shoes and thoughtful volume.",
-  "@theo": "Tailoring, movement, and occasional unpopular takes.",
-  "@priyaedit": "A sharp edit is always the answer.",
-  "@junoo": "Getting dressed on a deadline.",
-  "@sade": "Thrifted pieces, patiently remade.",
+const seededProfileDetails: Record<string, Omit<Profile, "name" | "handle">> = {
+  "@amara": {
+    bio: "Evenings out, considered details, and a good rooftop table.",
+    website: "https://amara.example",
+    socials: { instagram: "@amaraafterdark", tiktok: "@amaraafterdark", x: "@amaraedits" },
+    about:
+      "I collect dinner looks, thoughtful details, and places worth dressing up for. My wardrobe is built around a little drama, a dependable black slip, and the belief that every rooftop deserves an entrance.",
+    avatar: post2,
+    stats: { posts: 38, thoughts: 284, reels: 12, likes: 18400, boosts: 721 },
+  },
+  "@kemistyles": {
+    bio: "Stylist with an eye for the finishing touch.",
+    website: "https://kemi.example",
+    socials: { instagram: "@kemistyles", tiktok: "@kemistyles", x: "@kemistyles" },
+    about:
+      "I am a stylist who starts with the finishing touch: the bag, the shoe, the proportion that makes a look feel intentional. Here for practical advice and polished choices.",
+    avatar: post1,
+    stats: { posts: 56, thoughts: 892, reels: 27, likes: 32100, boosts: 1850 },
+  },
+  "@noahfits": {
+    bio: "Practical fits for wherever the day goes.",
+    website: "https://noahfits.example",
+    socials: { instagram: "@noahfits", tiktok: "@noahfits" },
+    about:
+      "Getting dressed should work as hard as your day does. I share useful combinations, dependable layers, and fits that move from the commute to wherever the evening lands.",
+    avatar: post3,
+    stats: { posts: 31, thoughts: 410, reels: 9, likes: 9600, boosts: 418 },
+  },
+  "@linacarr": {
+    bio: "Coats, proportion, and the long view.",
+    website: "https://linacarr.example",
+    socials: { instagram: "@linacarr", x: "@linacarr" },
+    about:
+      "I write and dress with proportion in mind. Expect coats, quiet shoes, long hems, and observations about the silhouettes that stay interesting after the trend cycle moves on.",
+    avatar: post1,
+    stats: { posts: 72, thoughts: 630, reels: 16, likes: 41500, boosts: 2210 },
+  },
+  "@damiwears": {
+    bio: "Quiet shoes and thoughtful volume.",
+    socials: { instagram: "@damiwears", tiktok: "@damiwears" },
+    about:
+      "I am interested in volume, texture, and the understated shoes that let an outfit breathe. My style is patient, useful, and made to be lived in.",
+    avatar: post3,
+    stats: { posts: 19, thoughts: 178, reels: 4, likes: 5300, boosts: 204 },
+  },
+  "@theo": {
+    bio: "Tailoring, movement, and occasional unpopular takes.",
+    website: "https://theo.example",
+    socials: { instagram: "@theotailors", x: "@theotailors" },
+    about:
+      "Tailoring is a starting point, not a uniform. I make room for movement, personality, and the occasional opinion that does not go down easily.",
+    avatar: post1,
+    stats: { posts: 43, thoughts: 356, reels: 8, likes: 11200, boosts: 612 },
+  },
+  "@priyaedit": {
+    bio: "A sharp edit is always the answer.",
+    socials: { instagram: "@priyaedit", x: "@priyaedit" },
+    about:
+      "I believe a sharper edit solves most wardrobe questions. I share the pieces, proportions, and small decisions that turn plenty of clothes into a clear point of view.",
+    avatar: post2,
+    stats: { posts: 27, thoughts: 245, reels: 6, likes: 7800, boosts: 347 },
+  },
+  "@junoo": {
+    bio: "Getting dressed on a deadline.",
+    socials: { instagram: "@junoo", tiktok: "@junoo" },
+    about:
+      "I get dressed quickly and I like helping other people do the same. Expect practical outfit formulas, quick fixes, and a little more confidence before you head out the door.",
+    avatar: post3,
+    stats: { posts: 21, thoughts: 198, reels: 11, likes: 6900, boosts: 290 },
+  },
+  "@sade": {
+    bio: "Thrifted pieces, patiently remade.",
+    website: "https://sade.example",
+    socials: { instagram: "@sademakes", tiktok: "@sademakes" },
+    about:
+      "I find, mend, and remake clothes with a history. My wardrobe is proof that a good piece can have more than one life when you give it some patience.",
+    avatar: post2,
+    stats: { posts: 35, thoughts: 302, reels: 14, likes: 15800, boosts: 980 },
+  },
 };
 
 export function getProfile(handle: string): Profile | undefined {
   const normalizedHandle = `@${handle.replace(/^@/, "").toLowerCase()}`;
-  if (normalizedHandle === me.handle) return { name: me.name, handle: me.handle, bio: me.bio };
+  if (normalizedHandle === me.handle) return me;
 
   const author = posts
     .flatMap((post) => [
@@ -290,7 +369,9 @@ export function getProfile(handle: string): Profile | undefined {
   return (
     author && {
       ...author,
-      bio: profileBios[normalizedHandle] ?? "Sharing a point of view on LeBeHo.",
+      ...(seededProfileDetails[normalizedHandle] ?? {
+        bio: "Sharing a point of view on LeBeHo.",
+      }),
     }
   );
 }
