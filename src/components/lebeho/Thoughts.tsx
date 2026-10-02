@@ -1,6 +1,7 @@
 import { ArrowUp, EyeOff, Flag, MessageCircle, UserRoundX } from "lucide-react";
 import { useState } from "react";
 import { ProfileLink } from "./ProfileLink";
+import { useRequireAccount } from "@/hooks/use-viewer";
 import type { Post, Reply, Thought } from "@/lib/lebeho-data";
 import { me } from "@/lib/lebeho-data";
 
@@ -34,6 +35,7 @@ function Conversation({
 
   const sendReply = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!requireAccount()) return;
     if (!draft.trim()) return;
     onReply(thought.id, {
       id: `reply-${Date.now()}`,
@@ -178,6 +180,7 @@ export function Thoughts({ post }: { post: Post }) {
     );
   const sendThought = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!requireAccount()) return;
     if (!draft.trim() || thoughtsClosed) return;
     setThoughts((current) => [
       ...current,
