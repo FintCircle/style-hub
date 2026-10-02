@@ -57,6 +57,7 @@ export const posts: Post[] = [
         author: "Kemi O.",
         handle: "@kemistyles",
         time: "4m",
+        boosts: 24,
         text: "A, but swap the gold clutch for something structured. The heels already carry the shine.",
         replies: [
           {
@@ -80,6 +81,7 @@ export const posts: Post[] = [
         author: "Noah",
         handle: "@noahfits",
         time: "2m",
+        boosts: 11,
         text: "Rooftop means wind. Ivory suit wins on movement.",
       },
     ],
@@ -97,6 +99,7 @@ export const posts: Post[] = [
         author: "Dami",
         handle: "@damiwears",
         time: "20m",
+        boosts: 18,
         text: "Agreed — the volume only reads expensive when the shoe stays quiet.",
         replies: [
           {
@@ -128,6 +131,7 @@ export const posts: Post[] = [
         author: "Priya",
         handle: "@priyaedit",
         time: "44m",
+        boosts: 9,
         text: "Off-duty only. The second there's a tie involved it falls apart.",
       },
     ],
