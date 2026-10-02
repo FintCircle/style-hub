@@ -79,7 +79,7 @@ export function PostImageGallery({ images, author }: PostImageGalleryProps) {
             Image {activeIndex + 1} of {imageCount}. Swipe left or right to browse on touch devices.
           </DialogDescription>
           <ImageViewer
-            image={images[activeIndex]}
+            image={images[activeIndex]!}
             index={activeIndex}
             imageCount={imageCount}
             onPrevious={() => moveTo(activeIndex - 1)}
