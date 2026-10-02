@@ -10,6 +10,9 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 
+import { ClerkProvider } from "@clerk/clerk-react";
+import { CLERK_PUBLISHABLE_KEY, ACCOUNTS_URL } from "../lib/account";
+import { Toaster } from "../components/ui/sonner";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -123,9 +126,17 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
-    </QueryClientProvider>
+    <ClerkProvider
+      publishableKey={CLERK_PUBLISHABLE_KEY}
+      signInUrl={`${ACCOUNTS_URL}/sign-in`}
+      signUpUrl={`${ACCOUNTS_URL}/sign-up`}
+      afterSignOutUrl="/"
+    >
+      <QueryClientProvider client={queryClient}>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <Toaster />
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }

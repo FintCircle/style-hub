@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FileVideo, ImagePlus, Timer, Plus, Upload, X } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { BottomNav } from "@/components/lebeho/BottomNav";
+import { AccountGate } from "@/components/lebeho/AccountGate";
+import { uploadMedia, videoDuration } from "@/lib/account";
+import { createPost, createReel } from "@/lib/lebeho.functions";
 import { hashtags, normalizeHashtag } from "@/lib/lebeho-data";
 
 export const Route = createFileRoute("/create")({
@@ -21,8 +26,16 @@ export const Route = createFileRoute("/create")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Create,
+  component: CreatePage,
 });
+
+function CreatePage() {
+  return (
+    <AccountGate>
+      <Create />
+    </AccountGate>
+  );
+}
 
 const durations = [15, 30, 60, 120];
 const maxPhotoCount = 10;
@@ -46,7 +59,8 @@ function Create() {
   const [photos, setPhotos] = useState<MediaPreview[]>([]);
   const [reel, setReel] = useState<MediaPreview | undefined>();
   const [uploadError, setUploadError] = useState<string | undefined>();
-  const [done, setDone] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const queryClient = useQueryClient();
   const photoInputRef = useRef<HTMLInputElement>(null);
   const reelInputRef = useRef<HTMLInputElement>(null);
   const selectedMediaRef = useRef<{ photos: MediaPreview[]; reel?: MediaPreview | undefined }>({
@@ -121,6 +135,46 @@ function Create() {
       };
     });
     setUploadError(undefined);
+  }
+
+  async function publish() {
+    setUploadError(undefined);
+    setPublishing(true);
+    try {
+      if (mode === "reel") {
+        if (!reel) throw new Error("Choose a video for your reel.");
+        const durationMs = await videoDuration(reel.file);
+        if (durationMs > 60_000) throw new Error("Reels can be up to 60 seconds.");
+        const video = await uploadMedia(reel.file, "video", durationMs);
+        await createReel({ data: { videoMediaId: video.id, caption: text, durationMs: Math.max(1, Math.round(durationMs)) } });
+        queryClient.invalidateQueries({ queryKey: ["reels"] });
+        toast.success("Your reel is live.");
+        navigate({ to: "/reels" });
+        return;
+      }
+      const voteChoices = choices.map((c) => c.trim()).filter(Boolean);
+      if (withVote && voteChoices.length < 2) throw new Error("Add at least two vote choices.");
+      const uploaded = [];
+      for (const photo of photos) uploaded.push(await uploadMedia(photo.file, "image"));
+      const hashtagName = hashtags.find((h) => h.slug === selectedHashtag)?.name;
+      await createPost({
+        data: {
+          text,
+          mediaIds: uploaded.map((u) => u.id),
+          ...(selectedHashtag ? { hashtag: selectedHashtag } : {}),
+          ...(hashtagName ? { hashtagName } : {}),
+          ...(withVote ? { vote: voteChoices } : {}),
+          ...(rush ? { rushMinutes: minutes } : {}),
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      toast.success(rush ? "You're in Rush Hour." : "Posted to the Feed.");
+      navigate({ to: rush ? "/rush" : "/" });
+    } catch (error) {
+      setUploadError(error instanceof Error ? error.message : "Something went wrong.");
+    } finally {
+      setPublishing(false);
+    }
   }
 
   function removeReel() {
@@ -404,26 +458,20 @@ function Create() {
 
         <button
           type="button"
-          onClick={() => setDone(true)}
-          className="mt-8 w-full rounded-full bg-primary py-4 text-[11px] uppercase tracking-[0.25em] text-primary-foreground"
+          onClick={publish}
+          disabled={publishing}
+          className="mt-8 w-full rounded-full bg-primary py-4 text-[11px] uppercase tracking-[0.25em] text-primary-foreground disabled:opacity-60"
         >
           <Upload className="mr-2 inline size-3.5" strokeWidth={1.75} />
-          {mode === "reel" ? "Publish reel" : rush ? `Post to Rush Hour` : "Post to Feed"}
+          {publishing
+            ? "Publishing…"
+            : mode === "reel"
+              ? "Publish reel"
+              : rush
+                ? `Post to Rush Hour`
+                : "Post to Feed"}
         </button>
 
-        {done && (
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Ready to publish
-            {selectedHashtag
-              ? ` to #${hashtags.find((hashtag) => hashtag.slug === selectedHashtag)?.name ?? selectedHashtag}`
-              : ""}{" "}
-            {mode === "reel" && reel ? ` with ${reel.file.name}` : ""}
-            {mode === "post" && photos.length
-              ? ` with ${photos.length} photo${photos.length === 1 ? "" : "s"}`
-              : ""}
-            — upload is ready for publishing.
-          </p>
-        )}
       </div>
 
       <BottomNav />

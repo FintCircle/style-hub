@@ -42,6 +42,12 @@ export type Post = {
   thoughts: Thought[];
   /** Prevents new opening Thoughts without affecting existing conversations. */
   thoughtsClosed?: boolean;
+  /** Stored in D1 (vs. sample content). */
+  live?: boolean;
+  /** Visible Thought count when the list itself isn't loaded. */
+  thoughtCount?: number;
+  /** Choice the signed-in viewer already picked. */
+  viewerVote?: string;
 };
 
 const now = Date.now();
@@ -216,6 +222,9 @@ export type Reel = {
   poster: string;
   likes: number;
   duration: string;
+  /** R2 video URL for live reels. */
+  video?: string;
+  likedByViewer?: boolean;
 };
 
 export const reels: Reel[] = [

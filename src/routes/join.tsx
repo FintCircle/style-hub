@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { signInUrl, signUpUrl } from "@/lib/account";
 import { InfoPage, InfoSection } from "@/components/lebeho/InfoPage";
 import { Button } from "@/components/ui/button";
 
@@ -18,9 +19,16 @@ function JoinPage() {
   return <InfoPage eyebrow="Come as you are" title="Join LeBeHo">
     <p>Know exactly what you're doing, have absolutely no idea what to wear, or be somewhere in between. If fashion interests you, there is a place for you here.</p>
     <InfoSection title="Start with the conversation"><p>Explore what people are wearing, thinking, asking, and deciding right now.</p></InfoSection>
-    <Button asChild size="lg" className="rounded-full px-7">
-      <Link to="/">Explore the Feed</Link>
-    </Button>
-    <p className="text-sm text-muted-foreground">Account creation is coming next. For now, you can explore the LeBeHo MVP.</p>
+    <div className="flex flex-wrap gap-3">
+      <Button asChild size="lg" className="rounded-full px-7">
+        <a href={signUpUrl("/")}>Create your account</a>
+      </Button>
+      <Button asChild size="lg" variant="outline" className="rounded-full px-7">
+        <a href={signInUrl("/")}>Sign in</a>
+      </Button>
+    </div>
+    <p className="text-sm text-muted-foreground">
+      Or keep browsing — <Link to="/" className="underline underline-offset-4">explore the Feed</Link>. You'll need an account to post, vote, share Thoughts, or like Reels.
+    </p>
   </InfoPage>;
 }

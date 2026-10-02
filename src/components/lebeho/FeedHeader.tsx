@@ -1,4 +1,7 @@
 import { Link } from "@tanstack/react-router";
+import { useClerk } from "@clerk/clerk-react";
+import { signUpUrl } from "@/lib/account";
+import { useViewer } from "@/hooks/use-viewer";
 import { Menu, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,10 +19,11 @@ const menuItems = [
   { to: "/terms", label: "Terms" },
   { to: "/privacy", label: "Privacy" },
   { to: "/guidelines", label: "Guidelines" },
-  { to: "/join", label: "Join LeBeHo" },
 ] as const;
 
 export function FeedHeader() {
+  const { isSignedIn, profile } = useViewer();
+  const { signOut } = useClerk();
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 px-5 py-3 backdrop-blur-xl">
       <div className="relative mx-auto grid max-w-xl grid-cols-[2.5rem_1fr_2.5rem] items-center">
@@ -57,6 +61,24 @@ export function FeedHeader() {
                   </Link>
                 </SheetClose>
               ))}
+              {isSignedIn ? (
+                <button
+                  type="button"
+                  onClick={() => signOut({ redirectUrl: "/" })}
+                  className="flex items-baseline justify-between border-b border-border py-5 text-left transition-colors hover:text-rush"
+                >
+                  <span className="font-editorial text-2xl">Sign out</span>
+                  <span className="text-[10px] text-muted-foreground">{profile?.handle ?? ""}</span>
+                </button>
+              ) : (
+                <a
+                  href={signUpUrl("/")}
+                  className="flex items-baseline justify-between border-b border-border py-5 text-left transition-colors hover:text-rush"
+                >
+                  <span className="font-editorial text-2xl">Join LeBeHo</span>
+                  <span className="text-[10px] text-muted-foreground">0{menuItems.length + 1}</span>
+                </a>
+              )}
             </nav>
             <p className="px-7 pb-8 text-xs uppercase text-muted-foreground">Fashion is the conversation.</p>
           </SheetContent>

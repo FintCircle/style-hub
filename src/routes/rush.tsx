@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { posts } from "@/lib/lebeho-data";
+import { useFeed } from "@/hooks/use-feed";
 import { VoteBlock } from "@/components/lebeho/VoteBlock";
 import { Countdown, useCountdown } from "@/components/lebeho/Countdown";
 import { BottomNav } from "@/components/lebeho/BottomNav";
@@ -54,7 +54,7 @@ function RushCard({ post }: { post: Post }) {
         />
       )}
 
-      {post.vote && !over && <VoteBlock choices={post.vote} variant="rush" />}
+      {post.vote && !over && <VoteBlock choices={post.vote} variant="rush" postId={post.id} live={Boolean(post.live)} viewerVote={post.viewerVote} />}
 
       <p className="mt-4 text-[15px] leading-relaxed">{post.text}</p>
 
@@ -68,7 +68,7 @@ function RushCard({ post }: { post: Post }) {
 }
 
 function RushHour() {
-  const rushPosts = posts.filter((p) => p.rushEndsAt);
+  const { posts: rushPosts } = useFeed({ rushOnly: true });
 
   return (
     <div className="rush-surface min-h-screen pb-24">

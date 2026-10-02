@@ -23,6 +23,7 @@ import { Route as HashtagsHashtagRouteImport } from './routes/hashtags/$hashtag'
 import { Route as PostsPostIdRouteImport } from './routes/posts/$postId'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileHandleRouteImport } from './routes/profile/$handle'
+import { Route as ApiPublicMediaUploadRouteImport } from './routes/api/public/media/upload'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -94,6 +95,11 @@ const ProfileHandleRoute = ProfileHandleRouteImport.update({
   path: '/$handle',
   getParentRoute: () => ProfileRoute,
 } as any)
+const ApiPublicMediaUploadRoute = ApiPublicMediaUploadRouteImport.update({
+  id: '/api/public/media/upload',
+  path: '/api/public/media/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/posts/$postId': typeof PostsPostIdRoute
   '/profile/$handle': typeof ProfileHandleRoute
   '/profile/': typeof ProfileIndexRoute
+  '/api/public/media/upload': typeof ApiPublicMediaUploadRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/posts/$postId': typeof PostsPostIdRoute
   '/profile/$handle': typeof ProfileHandleRoute
   '/profile': typeof ProfileIndexRoute
+  '/api/public/media/upload': typeof ApiPublicMediaUploadRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/posts/$postId': typeof PostsPostIdRoute
   '/profile/$handle': typeof ProfileHandleRoute
   '/profile/': typeof ProfileIndexRoute
+  '/api/public/media/upload': typeof ApiPublicMediaUploadRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/posts/$postId'
     | '/profile/$handle'
     | '/profile/'
+    | '/api/public/media/upload'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,6 +185,7 @@ export interface FileRouteTypes {
     | '/posts/$postId'
     | '/profile/$handle'
     | '/profile'
+    | '/api/public/media/upload'
   id:
     | '__root__'
     | '/'
@@ -191,6 +202,7 @@ export interface FileRouteTypes {
     | '/posts/$postId'
     | '/profile/$handle'
     | '/profile/'
+    | '/api/public/media/upload'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -206,6 +218,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   HashtagsHashtagRoute: typeof HashtagsHashtagRoute
   PostsPostIdRoute: typeof PostsPostIdRoute
+  ApiPublicMediaUploadRoute: typeof ApiPublicMediaUploadRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -308,6 +321,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileHandleRouteImport
       parentRoute: typeof ProfileRoute
     }
+    '/api/public/media/upload': {
+      id: '/api/public/media/upload'
+      path: '/api/public/media/upload'
+      fullPath: '/api/public/media/upload'
+      preLoaderRoute: typeof ApiPublicMediaUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -337,6 +357,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   HashtagsHashtagRoute: HashtagsHashtagRoute,
   PostsPostIdRoute: PostsPostIdRoute,
+  ApiPublicMediaUploadRoute: ApiPublicMediaUploadRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

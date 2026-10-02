@@ -29,31 +29,49 @@ export function PostCard({ post }: { post: Post }) {
         )}
       </header>
 
-      <Link
-        to="/posts/$postId"
-        params={{ postId: post.id }}
-        className="mt-4 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      >
-        <p className="text-[17px] leading-relaxed">{post.text}</p>
-      </Link>
+      {post.live ? (
+        post.text && <p className="mt-4 text-[17px] leading-relaxed">{post.text}</p>
+      ) : (
+        <Link
+          to="/posts/$postId"
+          params={{ postId: post.id }}
+          className="mt-4 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <p className="text-[17px] leading-relaxed">{post.text}</p>
+        </Link>
+      )}
       {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-3" />}
 
       <PostImageGallery images={post.images} author={post.author} />
-      {post.vote && <VoteBlock choices={post.vote} />}
+      {post.vote && (
+        <VoteBlock
+          choices={post.vote}
+          postId={post.id}
+          live={Boolean(post.live)}
+          viewerVote={post.viewerVote}
+        />
+      )}
       {live && post.rushEndsAt && (
         <p className="mt-4 text-sm text-rush">
           Closes in <Countdown endsAt={post.rushEndsAt} className="font-semibold" />
         </p>
       )}
 
-      <Link
-        to="/posts/$postId"
-        params={{ postId: post.id }}
-        className="mt-5 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <MessageSquareQuote className="size-4" strokeWidth={1.5} /> {post.thoughts.length} Stylist
-        thoughts
-      </Link>
+      {post.live ? (
+        <p className="mt-5 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          <MessageSquareQuote className="size-4" strokeWidth={1.5} /> {post.thoughtCount ?? 0} Stylist
+          thoughts
+        </p>
+      ) : (
+        <Link
+          to="/posts/$postId"
+          params={{ postId: post.id }}
+          className="mt-5 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <MessageSquareQuote className="size-4" strokeWidth={1.5} /> {post.thoughts.length} Stylist
+          thoughts
+        </Link>
+      )}
     </article>
   );
 }

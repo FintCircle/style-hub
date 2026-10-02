@@ -1,4 +1,10 @@
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { AccountGate } from "@/components/lebeho/AccountGate";
+import { useViewer } from "@/hooks/use-viewer";
+import { uploadMedia } from "@/lib/account";
+import { updateProfile } from "@/lib/lebeho.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Camera, ExternalLink, Pencil, Plus } from "lucide-react";
 import { posts, reels, me } from "@/lib/lebeho-data";
@@ -35,8 +41,16 @@ export const Route = createFileRoute("/profile/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: Profile,
+  component: ProfilePage,
 });
+
+function ProfilePage() {
+  return (
+    <AccountGate>
+      <Profile />
+    </AccountGate>
+  );
+}
 
 const tabs = ["Posts", "Thoughts", "Reels", "About"] as const;
 type ProfileDetails = {
@@ -68,7 +82,32 @@ function Profile() {
   const [aboutDraft, setAboutDraft] = useState(initialProfile.about);
   const [editOpen, setEditOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
-  const mine = posts.slice(0, 2);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [saving, setSaving] = useState(false);
+  const viewer = useViewer();
+  const queryClient = useQueryClient();
+  const live = viewer.live && viewer.profile;
+  const handle = viewer.profile?.handle ?? me.handle;
+  const mine = live ? [] : posts.slice(0, 2);
+
+  useEffect(() => {
+    if (!viewer.profile) return;
+    const { id: _id, handle: _h, ...details } = viewer.profile;
+    setProfile(details);
+    setDraft(details);
+    setAboutDraft(details.about);
+  }, [viewer.profile]);
+
+  async function persist(next: ProfileDetails) {
+    if (!live) return next;
+    const avatarMediaId = avatarFile ? (await uploadMedia(avatarFile, "avatar")).id : undefined;
+    const { avatar: _a, ...fields } = next;
+    const saved = await updateProfile({ data: { ...fields, ...(avatarMediaId ? { avatarMediaId } : {}) } });
+    setAvatarFile(null);
+    queryClient.invalidateQueries({ queryKey: ["viewer"] });
+    const { id: _id, handle: _h, ...details } = saved;
+    return details;
+  }
 
   const updateDraft = (field: keyof ProfileDetails, value: string) => {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -77,21 +116,39 @@ function Profile() {
   const chooseAvatar = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setAvatarFile(file);
     const reader = new FileReader();
     reader.onload = () => updateDraft("avatar", String(reader.result));
     reader.readAsDataURL(file);
   };
 
-  const saveProfile = () => {
-    setProfile(draft);
-    setAboutDraft(draft.about);
-    setEditOpen(false);
+  const saveProfile = async () => {
+    setSaving(true);
+    try {
+      const saved = await persist(draft);
+      setProfile(saved);
+      setDraft(saved);
+      setAboutDraft(saved.about);
+      setEditOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save your profile.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const saveAbout = () => {
-    setProfile((current) => ({ ...current, about: aboutDraft }));
-    setDraft((current) => ({ ...current, about: aboutDraft }));
-    setAboutOpen(false);
+  const saveAbout = async () => {
+    setSaving(true);
+    try {
+      const saved = await persist({ ...profile, about: aboutDraft });
+      setProfile(saved);
+      setDraft(saved);
+      setAboutOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't save your about.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const socialLinks = [
@@ -108,7 +165,7 @@ function Profile() {
             <Avatar avatar={profile.avatar} name={profile.name} />
             <div>
               <h1 className="font-editorial text-3xl leading-none">{profile.name}</h1>
-              <p className="mt-1.5 text-xs tracking-wide text-muted-foreground">{me.handle}</p>
+              <p className="mt-1.5 text-xs tracking-wide text-muted-foreground">{handle}</p>
             </div>
           </div>
           <Sheet open={editOpen} onOpenChange={setEditOpen}>
@@ -192,7 +249,9 @@ function Profile() {
                 <SheetClose asChild>
                   <Button variant="ghost">Cancel</Button>
                 </SheetClose>
-                <Button onClick={saveProfile}>Save profile</Button>
+                <Button onClick={saveProfile} disabled={saving}>
+                  {saving ? "Saving…" : "Save profile"}
+                </Button>
               </SheetFooter>
             </SheetContent>
           </Sheet>
@@ -320,7 +379,7 @@ function Profile() {
             <SheetClose asChild>
               <Button variant="ghost">Cancel</Button>
             </SheetClose>
-            <Button onClick={saveAbout}>
+            <Button onClick={saveAbout} disabled={saving}>
               {profile.about ? (
                 "Save about"
               ) : (
