@@ -19,6 +19,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReelsRouteImport } from './routes/reels'
 import { Route as RushRouteImport } from './routes/rush'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as HashtagsHashtagRouteImport } from './routes/hashtags/$hashtag'
 import { Route as PostsPostIdRouteImport } from './routes/posts/$postId'
 import { Route as ProfileIndexRouteImport } from './routes/profile/index'
 import { Route as ProfileHandleRouteImport } from './routes/profile/$handle'
@@ -73,6 +74,11 @@ const TermsRoute = TermsRouteImport.update({
   path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HashtagsHashtagRoute = HashtagsHashtagRouteImport.update({
+  id: '/hashtags/$hashtag',
+  path: '/hashtags/$hashtag',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PostsPostIdRoute = PostsPostIdRouteImport.update({
   id: '/posts/$postId',
   path: '/posts/$postId',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
   '/terms': typeof TermsRoute
+  '/hashtags/$hashtag': typeof HashtagsHashtagRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/profile/$handle': typeof ProfileHandleRoute
   '/profile/': typeof ProfileIndexRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
   '/terms': typeof TermsRoute
+  '/hashtags/$hashtag': typeof HashtagsHashtagRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/profile/$handle': typeof ProfileHandleRoute
   '/profile': typeof ProfileIndexRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
   '/terms': typeof TermsRoute
+  '/hashtags/$hashtag': typeof HashtagsHashtagRoute
   '/posts/$postId': typeof PostsPostIdRoute
   '/profile/$handle': typeof ProfileHandleRoute
   '/profile/': typeof ProfileIndexRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/reels'
     | '/rush'
     | '/terms'
+    | '/hashtags/$hashtag'
     | '/posts/$postId'
     | '/profile/$handle'
     | '/profile/'
@@ -161,6 +171,7 @@ export interface FileRouteTypes {
     | '/reels'
     | '/rush'
     | '/terms'
+    | '/hashtags/$hashtag'
     | '/posts/$postId'
     | '/profile/$handle'
     | '/profile'
@@ -176,6 +187,7 @@ export interface FileRouteTypes {
     | '/reels'
     | '/rush'
     | '/terms'
+    | '/hashtags/$hashtag'
     | '/posts/$postId'
     | '/profile/$handle'
     | '/profile/'
@@ -192,6 +204,7 @@ export interface RootRouteChildren {
   ReelsRoute: typeof ReelsRoute
   RushRoute: typeof RushRoute
   TermsRoute: typeof TermsRoute
+  HashtagsHashtagRoute: typeof HashtagsHashtagRoute
   PostsPostIdRoute: typeof PostsPostIdRoute
 }
 
@@ -267,6 +280,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/hashtags/$hashtag': {
+      id: '/hashtags/$hashtag'
+      path: '/hashtags/$hashtag'
+      fullPath: '/hashtags/$hashtag'
+      preLoaderRoute: typeof HashtagsHashtagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/posts/$postId': {
       id: '/posts/$postId'
       path: '/posts/$postId'
@@ -315,6 +335,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReelsRoute: ReelsRoute,
   RushRoute: RushRoute,
   TermsRoute: TermsRoute,
+  HashtagsHashtagRoute: HashtagsHashtagRoute,
   PostsPostIdRoute: PostsPostIdRoute,
 }
 export const routeTree = rootRouteImport

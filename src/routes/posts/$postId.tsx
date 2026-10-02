@@ -6,6 +6,7 @@ import { ProfileLink } from "@/components/lebeho/ProfileLink";
 import { Thoughts } from "@/components/lebeho/Thoughts";
 import { VoteBlock } from "@/components/lebeho/VoteBlock";
 import { PostImageGallery } from "@/components/lebeho/PostImageGallery";
+import { HashtagLink } from "@/components/lebeho/HashtagLink";
 import { getPost } from "@/lib/lebeho-data";
 
 export const Route = createFileRoute("/posts/$postId")({
@@ -55,6 +56,7 @@ function PostPage() {
             )}
           </header>
           <p className="mt-5 text-[18px] leading-relaxed">{post.text}</p>
+          {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-4" />}
           <PostImageGallery images={post.images} author={post.author} />
           {post.vote && <VoteBlock choices={post.vote} />}
           {live && post.rushEndsAt && (
