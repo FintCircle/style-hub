@@ -1,6 +1,7 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
+import { getSessionToken } from "./lib/account";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -24,6 +25,13 @@ const csrfMiddleware = createCsrfMiddleware({
   filter: (ctx) => ctx.handlerType === "serverFn",
 });
 
+/** Sends the Clerk session token with every server function call. */
+const attachClerkToken = createMiddleware({ type: "function" }).client(async ({ next }) => {
+  const token = await getSessionToken();
+  return next(token ? { headers: { Authorization: `Bearer ${token}` } } : undefined);
+});
+
 export const startInstance = createStart(() => ({
   requestMiddleware: [errorMiddleware, csrfMiddleware],
+  functionMiddleware: [attachClerkToken],
 }));
