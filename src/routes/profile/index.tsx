@@ -234,7 +234,6 @@ function Profile() {
 
         <dl className="mt-6 grid grid-cols-5 gap-2 border-y border-border py-4 text-center">
           {Object.entries(me.stats).map(([key, value]) => (
-          {Object.entries({ ...me.stats, likes: 1240, boosts: 86 }).map(([key, value]) => (
             <div key={key}>
               <dt className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                 {key}
