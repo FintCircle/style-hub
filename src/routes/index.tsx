@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { posts } from "@/lib/lebeho-data";
+import { Link } from "@tanstack/react-router";
+import { useFeed } from "@/hooks/use-feed";
 import { PostCard } from "@/components/lebeho/PostCard";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { FeedHeader } from "@/components/lebeho/FeedHeader";
@@ -26,6 +27,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Feed() {
+  const { posts, live, isLoading } = useFeed();
   return (
     <div className="min-h-screen bg-background pb-24">
       <FeedHeader />
@@ -37,6 +39,14 @@ function Feed() {
         {posts.map((post) => (
           <PostCard key={post.id} post={post} />
         ))}
+        {live && !isLoading && posts.length === 0 && (
+          <div className="px-5 py-16 text-center">
+            <p className="font-editorial text-2xl">The Feed is waiting for its first look.</p>
+            <Link to="/create" className="mt-4 inline-block text-sm underline underline-offset-4">
+              Start the conversation
+            </Link>
+          </div>
+        )}
       </div>
 
       <BottomNav />
