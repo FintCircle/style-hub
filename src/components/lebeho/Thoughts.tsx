@@ -1,16 +1,9 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { ProfileLink } from "./ProfileLink";
 import type { Post, Reply, Thought } from "@/lib/lebeho-data";
 import { me } from "@/lib/lebeho-data";
 
-type ConversationProps = {
-  thought: Thought;
-  post: Post;
-  onBoost: (thoughtId: string) => void;
-  boostedByMe: boolean;
-};
-
-function Conversation({ thought, post, onBoost, boostedByMe }: ConversationProps) {
+function Conversation({ thought, post }: { thought: Thought; post: Post }) {
   const [replies, setReplies] = useState(thought.replies ?? []);
   const [draft, setDraft] = useState("");
   const canReply = thought.handle === me.handle || post.handle === me.handle;
@@ -31,39 +24,15 @@ function Conversation({ thought, post, onBoost, boostedByMe }: ConversationProps
 
   return (
     <article className="border border-border bg-card p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs tracking-wide text-muted-foreground">
-            <ProfileLink
-              name={thought.author}
-              handle={thought.handle}
-              className="font-editorial text-base text-foreground"
-            />{" "}
-            {thought.handle} · {thought.time}
-          </p>
-          <p className="mt-2 text-[15px] leading-relaxed">{thought.text}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => onBoost(thought.id)}
-          aria-pressed={boostedByMe}
-          aria-label={`${boostedByMe ? "Remove Boost from" : "Boost"} ${thought.author}'s Thought`}
-          className={
-            "flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium tabular-nums transition-colors " +
-            (boostedByMe
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border text-muted-foreground hover:border-primary hover:text-primary")
-          }
-        >
-          <span aria-hidden="true" className="text-base leading-none">
-            ↑
-          </span>
-          <span>{thought.boosts}</span>
-        </button>
-      </div>
-      <p className="mt-2 text-xs text-muted-foreground">
-        Boost useful advice without joining this conversation.
+      <p className="text-xs tracking-wide text-muted-foreground">
+        <ProfileLink
+          name={thought.author}
+          handle={thought.handle}
+          className="font-editorial text-base text-foreground"
+        />{" "}
+        {thought.handle} · {thought.time}
       </p>
+      <p className="mt-2 text-[15px] leading-relaxed">{thought.text}</p>
       <div className="mt-4 space-y-4 border-l border-border pl-4">
         {replies.map((reply) => (
           <div key={reply.id}>
@@ -101,39 +70,7 @@ function Conversation({ thought, post, onBoost, boostedByMe }: ConversationProps
 
 export function Thoughts({ post }: { post: Post }) {
   const [thoughts, setThoughts] = useState(post.thoughts);
-  const [boostedThoughtIds, setBoostedThoughtIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState("");
-  const orderedThoughts = useMemo(
-    () =>
-      [...thoughts].sort(
-        (first, second) =>
-          second.boosts +
-          (second.replies?.length ?? 0) * 8 -
-          (first.boosts + (first.replies?.length ?? 0) * 8),
-      ),
-    [thoughts],
-  );
-
-  const toggleBoost = (thoughtId: string) => {
-    const hasBoosted = boostedThoughtIds.has(thoughtId);
-    setBoostedThoughtIds((current) => {
-      const next = new Set(current);
-      if (hasBoosted) {
-        next.delete(thoughtId);
-      } else {
-        next.add(thoughtId);
-      }
-      return next;
-    });
-    setThoughts((current) =>
-      current.map((thought) =>
-        thought.id === thoughtId
-          ? { ...thought, boosts: thought.boosts + (hasBoosted ? -1 : 1) }
-          : thought,
-      ),
-    );
-  };
-
   const sendThought = (event: React.FormEvent) => {
     event.preventDefault();
     if (!draft.trim()) return;
@@ -145,7 +82,6 @@ export function Thoughts({ post }: { post: Post }) {
         handle: me.handle,
         time: "now",
         text: draft.trim(),
-        boosts: 0,
         replies: [],
       },
     ]);
@@ -163,7 +99,7 @@ export function Thoughts({ post }: { post: Post }) {
         </h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           Start your own Thought. Only its author and the original poster can reply in that
-          conversation. Boosts highlight useful advice without opening the conversation to replies.
+          conversation.
         </p>
       </div>
       <form onSubmit={sendThought} className="flex gap-3 border-y border-border py-4">
@@ -181,14 +117,8 @@ export function Thoughts({ post }: { post: Post }) {
         </button>
       </form>
       <div className="space-y-4">
-        {orderedThoughts.map((thought) => (
-          <Conversation
-            key={thought.id}
-            thought={thought}
-            post={post}
-            onBoost={toggleBoost}
-            boostedByMe={boostedThoughtIds.has(thought.id)}
-          />
+        {thoughts.map((thought) => (
+          <Conversation key={thought.id} thought={thought} post={post} />
         ))}
       </div>
     </section>
