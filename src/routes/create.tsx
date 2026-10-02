@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ImagePlus, Timer, Plus, X } from "lucide-react";
+import { FileVideo, ImagePlus, Timer, Plus, Upload, X } from "lucide-react";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { hashtags, normalizeHashtag } from "@/lib/lebeho-data";
 
@@ -25,6 +25,13 @@ export const Route = createFileRoute("/create")({
 });
 
 const durations = [15, 30, 60, 120];
+const maxPhotoCount = 10;
+
+type MediaPreview = {
+  id: string;
+  file: File;
+  url: string;
+};
 
 function Create() {
   const navigate = useNavigate();
@@ -36,7 +43,13 @@ function Create() {
   const [minutes, setMinutes] = useState(30);
   const [hashtagInput, setHashtagInput] = useState("");
   const [selectedHashtag, setSelectedHashtag] = useState<string | undefined>();
+  const [photos, setPhotos] = useState<MediaPreview[]>([]);
+  const [reel, setReel] = useState<MediaPreview | undefined>();
+  const [uploadError, setUploadError] = useState<string | undefined>();
   const [done, setDone] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const reelInputRef = useRef<HTMLInputElement>(null);
+  const selectedMediaRef = useRef<{ photos: MediaPreview[]; reel?: MediaPreview }>({ photos: [] });
   const normalizedHashtag = normalizeHashtag(hashtagInput);
   const matchingHashtags = normalizedHashtag
     ? hashtags.filter((hashtag) => hashtag.slug.startsWith(normalizedHashtag))
@@ -47,6 +60,73 @@ function Create() {
   function selectHashtag(slug: string) {
     setSelectedHashtag(slug);
     setHashtagInput("");
+  }
+
+  useEffect(() => {
+    selectedMediaRef.current = { photos, reel };
+  }, [photos, reel]);
+
+  useEffect(() => {
+    return () => {
+      selectedMediaRef.current.photos.forEach((photo) => URL.revokeObjectURL(photo.url));
+      if (selectedMediaRef.current.reel) URL.revokeObjectURL(selectedMediaRef.current.reel.url);
+    };
+  }, []);
+
+  function addPhotos(files: FileList | null) {
+    if (!files) return;
+
+    const imageFiles = Array.from(files).filter((file) => file.type.startsWith("image/"));
+    const availableSlots = maxPhotoCount - photos.length;
+    const selectedFiles = imageFiles.slice(0, availableSlots);
+
+    if (selectedFiles.length !== files.length || imageFiles.length !== files.length) {
+      setUploadError(`Choose image files only, up to ${maxPhotoCount} photos.`);
+    } else {
+      setUploadError(undefined);
+    }
+
+    setPhotos((current) => [
+      ...current,
+      ...selectedFiles.map((file) => ({
+        id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+        file,
+        url: URL.createObjectURL(file),
+      })),
+    ]);
+  }
+
+  function removePhoto(photo: MediaPreview) {
+    URL.revokeObjectURL(photo.url);
+    setPhotos((current) => current.filter(({ id }) => id !== photo.id));
+    setUploadError(undefined);
+  }
+
+  function chooseReel(files: FileList | null) {
+    const file = files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      setUploadError("Choose a video file for your reel.");
+      return;
+    }
+
+    setReel((current) => {
+      if (current) URL.revokeObjectURL(current.url);
+      return {
+        id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+        file,
+        url: URL.createObjectURL(file),
+      };
+    });
+    setUploadError(undefined);
+  }
+
+  function removeReel() {
+    setReel((current) => {
+      if (current) URL.revokeObjectURL(current.url);
+      return undefined;
+    });
+    if (reelInputRef.current) reelInputRef.current.value = "";
   }
 
   return (
@@ -92,12 +172,50 @@ function Create() {
               className="w-full resize-none border-b border-border bg-transparent pb-4 font-editorial text-xl leading-relaxed outline-none placeholder:font-body placeholder:text-base placeholder:text-muted-foreground"
             />
 
-            <button
-              type="button"
-              className="mt-5 flex w-full items-center justify-center gap-2 rounded-sm border border-dashed border-border py-8 text-sm text-muted-foreground"
-            >
-              <ImagePlus className="size-5" strokeWidth={1.5} /> Add photos
-            </button>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="sr-only"
+              onChange={(event) => {
+                addPhotos(event.target.files);
+                event.target.value = "";
+              }}
+            />
+            {photos.length > 0 && (
+              <div
+                className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3"
+                aria-label="Selected photos"
+              >
+                {photos.map((photo) => (
+                  <div
+                    key={photo.id}
+                    className="group relative aspect-square overflow-hidden rounded-xl bg-secondary"
+                  >
+                    <img src={photo.url} alt={photo.file.name} className="size-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(photo)}
+                      aria-label={`Remove ${photo.file.name}`}
+                      className="absolute right-2 top-2 rounded-full bg-black/70 p-1.5 text-white"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {photos.length < maxPhotoCount && (
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-sm border border-dashed border-border py-8 text-sm text-muted-foreground"
+              >
+                <ImagePlus className="size-5" strokeWidth={1.5} />
+                {photos.length ? `Add photos (${photos.length}/${maxPhotoCount})` : "Add photos"}
+              </button>
+            )}
 
             <section className="mt-7 border-t border-border pt-5" aria-labelledby="hashtag-label">
               <div className="flex items-baseline justify-between gap-4">
@@ -238,14 +356,39 @@ function Create() {
           </div>
         ) : (
           <div className="mt-7">
-            <button
-              type="button"
-              className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-3 rounded-2xl bg-reels text-reels-foreground"
-            >
-              <ImagePlus className="size-8" strokeWidth={1.25} />
-              <span className="text-sm">Upload a vertical video</span>
-              <span className="text-xs opacity-60">Up to 60 seconds · likes only</span>
-            </button>
+            <input
+              ref={reelInputRef}
+              type="file"
+              accept="video/*"
+              className="sr-only"
+              onChange={(event) => {
+                chooseReel(event.target.files);
+                event.target.value = "";
+              }}
+            />
+            {reel ? (
+              <div className="relative aspect-[9/16] overflow-hidden rounded-2xl bg-reels">
+                <video src={reel.url} controls playsInline className="size-full object-cover" />
+                <button
+                  type="button"
+                  onClick={removeReel}
+                  aria-label="Remove selected reel"
+                  className="absolute right-3 top-3 rounded-full bg-black/70 p-2 text-white"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => reelInputRef.current?.click()}
+                className="flex aspect-[9/16] w-full flex-col items-center justify-center gap-3 rounded-2xl bg-reels text-reels-foreground"
+              >
+                <FileVideo className="size-8" strokeWidth={1.25} />
+                <span className="text-sm">Upload a vertical video</span>
+                <span className="text-xs opacity-60">Up to 60 seconds · likes only</span>
+              </button>
+            )}
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -255,11 +398,14 @@ function Create() {
           </div>
         )}
 
+        {uploadError && <p className="mt-3 text-sm text-destructive">{uploadError}</p>}
+
         <button
           type="button"
           onClick={() => setDone(true)}
           className="mt-8 w-full rounded-full bg-primary py-4 text-[11px] uppercase tracking-[0.25em] text-primary-foreground"
         >
+          <Upload className="mr-2 inline size-3.5" strokeWidth={1.75} />
           {mode === "reel" ? "Publish reel" : rush ? `Post to Rush Hour` : "Post to Feed"}
         </button>
 
@@ -269,7 +415,11 @@ function Create() {
             {selectedHashtag
               ? ` to #${hashtags.find((hashtag) => hashtag.slug === selectedHashtag)?.name ?? selectedHashtag}`
               : ""}{" "}
-            — connecting accounts and storage comes next.
+            {mode === "reel" && reel ? ` with ${reel.file.name}` : ""}
+            {mode === "post" && photos.length
+              ? ` with ${photos.length} photo${photos.length === 1 ? "" : "s"}`
+              : ""}
+            — upload is ready for publishing.
           </p>
         )}
       </div>
