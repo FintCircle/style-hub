@@ -23,6 +23,8 @@ export type Thought = {
   /** Community endorsement of useful advice. */
   boosts: number;
   replies?: Reply[];
+  /** OP visibility control; hidden Thoughts remain stored but leave the public list. */
+  isHidden?: boolean;
 };
 
 export type Post = {
@@ -36,6 +38,8 @@ export type Post = {
   /** epoch ms when the rush window closes; undefined = normal feed post */
   rushEndsAt?: number;
   thoughts: Thought[];
+  /** Prevents new opening Thoughts without affecting existing conversations. */
+  thoughtsClosed?: boolean;
 };
 
 const now = Date.now();
