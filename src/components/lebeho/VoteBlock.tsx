@@ -1,27 +1,55 @@
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { VoteChoice } from "@/lib/lebeho-data";
+import { useRequireAccount } from "@/hooks/use-viewer";
+import { castVote } from "@/lib/lebeho.functions";
 
 export function VoteBlock({
   choices,
   variant = "feed",
+  postId,
+  live = false,
+  viewerVote,
 }: {
   choices: VoteChoice[];
   variant?: "feed" | "rush";
+  postId?: string;
+  live?: boolean;
+  viewerVote?: string | undefined;
 }) {
-  const [picked, setPicked] = useState<string | null>(null);
-  const total = choices.reduce((s, c) => s + c.votes, 0) + (picked ? 1 : 0);
+  const [picked, setPicked] = useState<string | null>(viewerVote ?? null);
+  const requireAccount = useRequireAccount();
+  const queryClient = useQueryClient();
+  // Live counts already include the viewer's stored vote.
+  const extra = (id: string) => (picked === id && picked !== viewerVote ? 1 : 0);
+  const total = choices.reduce((s, c) => s + c.votes + extra(c.id), 0);
   const rush = variant === "rush";
+
+  async function choose(id: string) {
+    if (picked || !requireAccount()) return;
+    setPicked(id);
+    if (live && postId) {
+      try {
+        await castVote({ data: { postId, choiceId: id } });
+        queryClient.invalidateQueries({ queryKey: ["feed"] });
+      } catch (error) {
+        setPicked(null);
+        toast.error(error instanceof Error ? error.message : "Vote failed.");
+      }
+    }
+  }
 
   return (
     <div className="mt-4 space-y-2">
       {choices.map((c) => {
-        const votes = c.votes + (picked === c.id ? 1 : 0);
+        const votes = c.votes + extra(c.id);
         const pct = total ? Math.round((votes / total) * 100) : 0;
         return (
           <button
             key={c.id}
             type="button"
-            onClick={() => setPicked((p) => p ?? c.id)}
+            onClick={() => choose(c.id)}
             className={
               "relative w-full overflow-hidden rounded-full border px-5 py-3 text-left text-sm transition-colors " +
               (rush
@@ -43,11 +71,7 @@ export function VoteBlock({
           </button>
         );
       })}
-      <p
-        className={
-          "pt-1 text-xs " + (rush ? "opacity-80" : "text-muted-foreground")
-        }
-      >
+      <p className={"pt-1 text-xs " + (rush ? "opacity-80" : "text-muted-foreground")}>
         {picked ? `${total} votes` : `${total} votes · tap to choose`}
       </p>
     </div>
