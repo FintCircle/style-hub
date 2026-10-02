@@ -1,9 +1,17 @@
+import { ArrowUp } from "lucide-react";
 import { useState } from "react";
 import { ProfileLink } from "./ProfileLink";
 import type { Post, Reply, Thought } from "@/lib/lebeho-data";
 import { me } from "@/lib/lebeho-data";
 
-function Conversation({ thought, post }: { thought: Thought; post: Post }) {
+type ConversationProps = {
+  thought: Thought;
+  post: Post;
+  onBoost: (thoughtId: string) => void;
+  boostedByMe: boolean;
+};
+
+function Conversation({ thought, post, onBoost, boostedByMe }: ConversationProps) {
   const [replies, setReplies] = useState(thought.replies ?? []);
   const [draft, setDraft] = useState("");
   const canReply = thought.handle === me.handle || post.handle === me.handle;
@@ -24,15 +32,34 @@ function Conversation({ thought, post }: { thought: Thought; post: Post }) {
 
   return (
     <article className="border border-border bg-card p-4">
-      <p className="text-xs tracking-wide text-muted-foreground">
-        <ProfileLink
-          name={thought.author}
-          handle={thought.handle}
-          className="font-editorial text-base text-foreground"
-        />{" "}
-        {thought.handle} · {thought.time}
-      </p>
-      <p className="mt-2 text-[15px] leading-relaxed">{thought.text}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-xs tracking-wide text-muted-foreground">
+            <ProfileLink
+              name={thought.author}
+              handle={thought.handle}
+              className="font-editorial text-base text-foreground"
+            />{" "}
+            {thought.handle} · {thought.time}
+          </p>
+          <p className="mt-2 text-[15px] leading-relaxed">{thought.text}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => onBoost(thought.id)}
+          aria-label={`${boostedByMe ? "Remove Boost from" : "Boost"} ${thought.author}'s Thought`}
+          aria-pressed={boostedByMe}
+          className={
+            "flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium tabular-nums transition-colors " +
+            (boostedByMe
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border text-muted-foreground hover:border-primary hover:text-primary")
+          }
+        >
+          <ArrowUp aria-hidden="true" className="size-3.5" strokeWidth={2} />
+          <span>{thought.boosts}</span>
+        </button>
+      </div>
       <div className="mt-4 space-y-4 border-l border-border pl-4">
         {replies.map((reply) => (
           <div key={reply.id}>
@@ -70,7 +97,30 @@ function Conversation({ thought, post }: { thought: Thought; post: Post }) {
 
 export function Thoughts({ post }: { post: Post }) {
   const [thoughts, setThoughts] = useState(post.thoughts);
+  const [boostedThoughtIds, setBoostedThoughtIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState("");
+
+  const toggleBoost = (thoughtId: string) => {
+    const hasBoosted = boostedThoughtIds.has(thoughtId);
+
+    setBoostedThoughtIds((current) => {
+      const next = new Set(current);
+      if (hasBoosted) {
+        next.delete(thoughtId);
+      } else {
+        next.add(thoughtId);
+      }
+      return next;
+    });
+    setThoughts((current) =>
+      current.map((thought) =>
+        thought.id === thoughtId
+          ? { ...thought, boosts: thought.boosts + (hasBoosted ? -1 : 1) }
+          : thought,
+      ),
+    );
+  };
+
   const sendThought = (event: React.FormEvent) => {
     event.preventDefault();
     if (!draft.trim()) return;
@@ -82,6 +132,7 @@ export function Thoughts({ post }: { post: Post }) {
         handle: me.handle,
         time: "now",
         text: draft.trim(),
+        boosts: 0,
         replies: [],
       },
     ]);
@@ -118,7 +169,13 @@ export function Thoughts({ post }: { post: Post }) {
       </form>
       <div className="space-y-4">
         {thoughts.map((thought) => (
-          <Conversation key={thought.id} thought={thought} post={post} />
+          <Conversation
+            key={thought.id}
+            thought={thought}
+            post={post}
+            onBoost={toggleBoost}
+            boostedByMe={boostedThoughtIds.has(thought.id)}
+          />
         ))}
       </div>
     </section>

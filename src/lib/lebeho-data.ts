@@ -20,6 +20,8 @@ export type Thought = {
   handle: string;
   text: string;
   time: string;
+  /** Community endorsement of useful advice. */
+  boosts: number;
   replies?: Reply[];
 };
 
