@@ -94,7 +94,7 @@ export const posts: Post[] = [
     handle: "@linacarr",
     time: "38m",
     text: "The oversized coat isn't going anywhere in 2026. The silhouette just moved: shorter boot, longer hem, nothing cinched.",
-    images: [post1],
+    images: [post1, post3],
     thoughts: [
       {
         id: "t3",
@@ -121,7 +121,7 @@ export const posts: Post[] = [
     handle: "@theo",
     time: "1h",
     text: "Unpopular take: white sneakers with a worsted suit still works, but only if the trouser breaks clean. Where do you land?",
-    images: [post3],
+    images: [post3, post2, post1, post2, post1],
     vote: [
       { id: "a", label: "Always works", votes: 302 },
       { id: "b", label: "Only off-duty", votes: 410 },
