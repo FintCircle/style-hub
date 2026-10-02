@@ -5,6 +5,7 @@ import { VoteBlock } from "./VoteBlock";
 import { Countdown, useCountdown } from "./Countdown";
 import { ProfileLink } from "./ProfileLink";
 import { PostImageGallery } from "./PostImageGallery";
+import { HashtagLink } from "./HashtagLink";
 
 export function PostCard({ post }: { post: Post }) {
   const remaining = useCountdown(post.rushEndsAt);
@@ -35,6 +36,7 @@ export function PostCard({ post }: { post: Post }) {
       >
         <p className="text-[17px] leading-relaxed">{post.text}</p>
       </Link>
+      {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-3" />}
 
       <PostImageGallery images={post.images} author={post.author} />
       {post.vote && <VoteBlock choices={post.vote} />}

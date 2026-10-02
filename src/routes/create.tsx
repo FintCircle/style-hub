@@ -2,6 +2,7 @@ import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ImagePlus, Timer, Plus, X } from "lucide-react";
 import { BottomNav } from "@/components/lebeho/BottomNav";
+import { hashtags, normalizeHashtag } from "@/lib/lebeho-data";
 
 export const Route = createFileRoute("/create")({
   head: () => ({
@@ -33,7 +34,20 @@ function Create() {
   const [choices, setChoices] = useState(["", ""]);
   const [rush, setRush] = useState(false);
   const [minutes, setMinutes] = useState(30);
+  const [hashtagInput, setHashtagInput] = useState("");
+  const [selectedHashtag, setSelectedHashtag] = useState<string | undefined>();
   const [done, setDone] = useState(false);
+  const normalizedHashtag = normalizeHashtag(hashtagInput);
+  const matchingHashtags = normalizedHashtag
+    ? hashtags.filter((hashtag) => hashtag.slug.startsWith(normalizedHashtag))
+    : [];
+  const canCreateHashtag =
+    Boolean(normalizedHashtag) && !hashtags.some((hashtag) => hashtag.slug === normalizedHashtag);
+
+  function selectHashtag(slug: string) {
+    setSelectedHashtag(slug);
+    setHashtagInput("");
+  }
 
   return (
     <div className="min-h-screen bg-background pb-28">
@@ -84,6 +98,70 @@ function Create() {
             >
               <ImagePlus className="size-5" strokeWidth={1.5} /> Add photos
             </button>
+
+            <section className="mt-7 border-t border-border pt-5" aria-labelledby="hashtag-label">
+              <div className="flex items-baseline justify-between gap-4">
+                <div>
+                  <h2 id="hashtag-label" className="text-sm">
+                    Discovery hashtag
+                  </h2>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    Optional. Choose one subject home for this public post.
+                  </p>
+                </div>
+                {selectedHashtag && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHashtag(undefined)}
+                    className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    #
+                    {hashtags.find((hashtag) => hashtag.slug === selectedHashtag)?.name ??
+                      selectedHashtag}{" "}
+                    ×
+                  </button>
+                )}
+              </div>
+              {!selectedHashtag && (
+                <div className="mt-4">
+                  <label className="sr-only" htmlFor="hashtag">
+                    Search or create a hashtag
+                  </label>
+                  <input
+                    id="hashtag"
+                    value={hashtagInput}
+                    onChange={(event) => setHashtagInput(event.target.value)}
+                    placeholder="Search or create a subject"
+                    className="w-full rounded-full border border-border bg-transparent px-5 py-3 text-sm outline-none focus:border-foreground"
+                  />
+                  {normalizedHashtag && (
+                    <div className="mt-2 overflow-hidden rounded-xl border border-border bg-card">
+                      {matchingHashtags.map((hashtag) => (
+                        <button
+                          key={hashtag.slug}
+                          type="button"
+                          onClick={() => selectHashtag(hashtag.slug)}
+                          className="flex w-full items-center justify-between px-4 py-3 text-left text-sm hover:bg-secondary"
+                        >
+                          <span>#{hashtag.name}</span>
+                          <span className="text-xs text-muted-foreground">Use existing</span>
+                        </button>
+                      ))}
+                      {canCreateHashtag && (
+                        <button
+                          type="button"
+                          onClick={() => selectHashtag(normalizedHashtag)}
+                          className="flex w-full items-center justify-between border-t border-border px-4 py-3 text-left text-sm hover:bg-secondary"
+                        >
+                          <span>Create #{hashtagInput.trim().replace(/^#/, "")}</span>
+                          <span className="text-xs text-muted-foreground">New discovery home</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
 
             <label className="mt-7 flex items-center justify-between border-t border-border pt-5 text-sm">
               Add a vote
@@ -187,7 +265,11 @@ function Create() {
 
         {done && (
           <p className="mt-4 text-center text-sm text-muted-foreground">
-            Ready to publish — connecting accounts and storage comes next.
+            Ready to publish
+            {selectedHashtag
+              ? ` to #${hashtags.find((hashtag) => hashtag.slug === selectedHashtag)?.name ?? selectedHashtag}`
+              : ""}{" "}
+            — connecting accounts and storage comes next.
           </p>
         )}
       </div>

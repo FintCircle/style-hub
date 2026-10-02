@@ -34,6 +34,8 @@ export type Post = {
   time: string;
   text: string;
   images: string[];
+  /** Optional, single discovery home for this public post. */
+  hashtag?: string;
   vote?: VoteChoice[];
   /** epoch ms when the rush window closes; undefined = normal feed post */
   rushEndsAt?: number;
@@ -52,6 +54,7 @@ export const posts: Post[] = [
     time: "12m",
     text: "Leaving for dinner in Kololo. Which one works better for a rooftop table?",
     images: [post2],
+    hashtag: "menswear",
     vote: [
       { id: "a", label: "A · Black slip + gold", votes: 184 },
       { id: "b", label: "B · Ivory tailoring", votes: 91 },
@@ -99,6 +102,7 @@ export const posts: Post[] = [
     time: "38m",
     text: "The oversized coat isn't going anywhere in 2026. The silhouette just moved: shorter boot, longer hem, nothing cinched.",
     images: [post1, post3],
+    hashtag: "menswearuk",
     thoughts: [
       {
         id: "t3",
@@ -126,6 +130,7 @@ export const posts: Post[] = [
     time: "1h",
     text: "Unpopular take: white sneakers with a worsted suit still works, but only if the trouser breaks clean. Where do you land?",
     images: [post3, post2, post1, post2, post1],
+    hashtag: "streetwear",
     vote: [
       { id: "a", label: "Always works", votes: 302 },
       { id: "b", label: "Only off-duty", votes: 410 },
@@ -163,9 +168,45 @@ export const posts: Post[] = [
     time: "3h",
     text: "Spent the morning re-dyeing a thrifted linen set. Fashion is cheaper when you're patient.",
     images: [],
+    hashtag: "thrift",
     thoughts: [],
   },
 ];
+
+export type Hashtag = {
+  slug: string;
+  name: string;
+};
+
+/** Community-created discovery homes available to reuse while creating a post. */
+export const hashtags: Hashtag[] = [
+  { slug: "menswear", name: "Menswear" },
+  { slug: "menswearuk", name: "MenswearUK" },
+  { slug: "menswearvintage", name: "MenswearVintage" },
+  { slug: "streetwear", name: "Streetwear" },
+  { slug: "thrift", name: "Thrift" },
+];
+
+export function normalizeHashtag(value: string) {
+  return value
+    .trim()
+    .replace(/^#/, "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toLowerCase();
+}
+
+export function getHashtag(slug: string) {
+  return hashtags.find((hashtag) => hashtag.slug === normalizeHashtag(slug));
+}
+
+export function getHashtagLabel(slug: string) {
+  return getHashtag(slug)?.name ?? slug;
+}
+
+export function getHashtagPosts(slug: string) {
+  const normalizedSlug = normalizeHashtag(slug);
+  return posts.filter((post) => post.hashtag === normalizedSlug);
+}
 
 export type Reel = {
   id: string;
