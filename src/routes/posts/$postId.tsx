@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/lebeho/BottomNav";
 import { ProfileLink } from "@/components/lebeho/ProfileLink";
 import { Thoughts } from "@/components/lebeho/Thoughts";
 import { VoteBlock } from "@/components/lebeho/VoteBlock";
+import { PostImageGallery } from "@/components/lebeho/PostImageGallery";
 import { getPost } from "@/lib/lebeho-data";
 
 export const Route = createFileRoute("/posts/$postId")({
@@ -54,9 +55,7 @@ function PostPage() {
             )}
           </header>
           <p className="mt-5 text-[18px] leading-relaxed">{post.text}</p>
-          {post.images.map((image) => (
-            <img key={image} src={image} alt="" className="mt-5 w-full rounded-sm object-cover" />
-          ))}
+          <PostImageGallery images={post.images} author={post.author} />
           {post.vote && <VoteBlock choices={post.vote} />}
           {live && post.rushEndsAt && (
             <p className="mt-4 text-sm text-rush">

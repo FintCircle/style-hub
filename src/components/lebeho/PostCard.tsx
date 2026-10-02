@@ -4,6 +4,7 @@ import type { Post } from "@/lib/lebeho-data";
 import { VoteBlock } from "./VoteBlock";
 import { Countdown, useCountdown } from "./Countdown";
 import { ProfileLink } from "./ProfileLink";
+import { PostImageGallery } from "./PostImageGallery";
 
 export function PostCard({ post }: { post: Post }) {
   const remaining = useCountdown(post.rushEndsAt);
@@ -33,25 +34,15 @@ export function PostCard({ post }: { post: Post }) {
         className="mt-4 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       >
         <p className="text-[17px] leading-relaxed">{post.text}</p>
-        {post.images.length > 0 && (
-          <div className="mt-5 overflow-hidden rounded-sm">
-            <img
-              src={post.images[0]}
-              alt=""
-              loading="lazy"
-              width={768}
-              height={960}
-              className="w-full object-cover"
-            />
-          </div>
-        )}
-        {post.vote && <VoteBlock choices={post.vote} />}
-        {live && post.rushEndsAt && (
-          <p className="mt-4 text-sm text-rush">
-            Closes in <Countdown endsAt={post.rushEndsAt} className="font-semibold" />
-          </p>
-        )}
       </Link>
+
+      <PostImageGallery images={post.images} author={post.author} />
+      {post.vote && <VoteBlock choices={post.vote} />}
+      {live && post.rushEndsAt && (
+        <p className="mt-4 text-sm text-rush">
+          Closes in <Countdown endsAt={post.rushEndsAt} className="font-semibold" />
+        </p>
+      )}
 
       <Link
         to="/posts/$postId"
