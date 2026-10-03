@@ -82,11 +82,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "LeBeHo" },
-      { name: "description", content: "A fashion-exclusive social platform." },
-      { property: "og:title", content: "LeBeHo" },
-      { property: "og:description", content: "A fashion-exclusive social platform." },
+      {
+        name: "description",
+        content:
+          "LeBeHo is a fashion social community for honest style advice, outfit conversations, Rush Hour decisions, and short fashion Reels.",
+      },
+      { name: "theme-color", content: "#f5f1e9" },
+      { name: "robots", content: "index, follow, max-image-preview:large" },
+      { name: "keywords", content: "fashion community, style advice, outfit advice, fashion social network, fashion reels" },
+      { property: "og:site_name", content: "LeBeHo" },
+      { property: "og:title", content: "LeBeHo — Let’s Be Honest About Fashion" },
+      {
+        property: "og:description",
+        content: "Honest fashion advice, outfit conversations, and style discovery in one community.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:url", content: "/" },
+      { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "LeBeHo — Let’s Be Honest About Fashion" },
+      {
+        name: "twitter:description",
+        content: "Honest fashion advice, outfit conversations, and style discovery.",
+      },
     ],
     links: [
       {
