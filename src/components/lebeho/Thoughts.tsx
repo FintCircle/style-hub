@@ -20,8 +20,22 @@ const isComposing = (event: React.KeyboardEvent) =>
 const errorMessage = (error: unknown) =>
   error instanceof Error ? error.message : "Something went wrong. Please try again.";
 
+function OpBadge() {
+  return (
+    <span
+      aria-label="Original poster"
+      className="ml-1 inline-flex items-center rounded-sm bg-primary px-1.5 py-px align-middle text-[10px] font-medium uppercase tracking-[0.15em] text-primary-foreground"
+    >
+      OP
+    </span>
+  );
+}
+
 type ConversationProps = {
   thought: Thought;
+  opHandle: string;
+  opName: string;
+  viewerHandle: string | undefined;
   canReply: boolean;
   onBoost: (thoughtId: string) => void;
   onReply: (thoughtId: string, text: string) => Promise<boolean>;
@@ -34,6 +48,9 @@ type ConversationProps = {
 
 function Conversation({
   thought,
+  opHandle,
+  opName,
+  viewerHandle,
   canReply,
   onBoost,
   onReply,
@@ -70,8 +87,8 @@ function Conversation({
               name={thought.author}
               handle={thought.handle}
               className="font-editorial text-base text-foreground"
-            />{" "}
-            {thought.handle} · {thought.time}
+            />
+            {thought.handle === opHandle && <OpBadge />} {thought.handle} · {thought.time}
           </p>
           <p className="mt-2 text-[15px] leading-relaxed break-words">{thought.text}</p>
         </div>
@@ -90,13 +107,6 @@ function Conversation({
         <div className="mt-3 flex flex-wrap gap-4 border-t border-border pt-3">
           <button
             type="button"
-            onClick={() => onHide(thought.id)}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <EyeOff className="size-3.5" /> Hide
-          </button>
-          <button
-            type="button"
             onClick={() => onReport(thought.id)}
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
@@ -104,10 +114,18 @@ function Conversation({
           </button>
           <button
             type="button"
-            onClick={() => onBlock(thought)}
+            onClick={() => onHide(thought.id)}
             className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
           >
-            <UserRoundX className="size-3.5" /> Block user
+            <EyeOff className="size-3.5" /> Hide
+          </button>
+          <button
+            type="button"
+            onClick={() => onBlock(thought)}
+            aria-label={`Block ${thought.author}`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <UserRoundX className="size-3.5" /> Block
           </button>
         </div>
       )}
@@ -121,27 +139,38 @@ function Conversation({
         {expanded ? "Hide conversation" : `View conversation (${replies.length})`}
       </button>
       {expanded && (
-        <div className="mt-4 space-y-4 border-l border-border pl-4">
+        <ol className="mt-4 space-y-4 border-l border-border pl-4">
           {replies.map((reply) => (
-            <div key={reply.id}>
-              <p className="text-xs tracking-wide text-muted-foreground">
-                <ProfileLink
-                  name={reply.author}
-                  handle={reply.handle}
-                  className="font-editorial text-sm text-foreground"
-                />{" "}
-                {reply.handle} · {reply.time}
-              </p>
-              <p className="mt-1 text-[15px] leading-relaxed break-words">{reply.text}</p>
-            </div>
+            <li key={reply.id} className="flex gap-2">
+              <span aria-hidden="true" className="pt-0.5 text-sm text-muted-foreground">
+                ↳
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs tracking-wide text-muted-foreground">
+                  <ProfileLink
+                    name={reply.author}
+                    handle={reply.handle}
+                    className="font-editorial text-sm text-foreground"
+                  />
+                  {reply.handle === opHandle && <OpBadge />} {reply.handle} · {reply.time}
+                </p>
+                <p className="mt-1 text-[15px] leading-relaxed break-words">{reply.text}</p>
+              </div>
+            </li>
           ))}
-          {!replies.length && <p className="text-sm text-muted-foreground">No replies yet.</p>}
-        </div>
+          {!replies.length && <li className="text-sm text-muted-foreground">No replies yet.</li>}
+        </ol>
+      )}
+      {!canReply && thought.handle !== opHandle && (
+        <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
+          Only {thought.author} and {opName} (OP) can reply here.
+          {viewerHandle ? " Share your own Thought to start a conversation with the OP." : ""}
+        </p>
       )}
       {canReply && (
         <form onSubmit={sendReply} className="mt-4 flex gap-3 border-t border-border pt-4">
           <label htmlFor={`reply-${thought.id}`} className="sr-only">
-            Reply to {thought.author}
+            Reply to {viewerHandle === opHandle ? thought.author : opName}
           </label>
           <input
             id={`reply-${thought.id}`}
@@ -151,7 +180,7 @@ function Conversation({
             onKeyDown={(event) => {
               if (event.key === "Enter" && isComposing(event)) event.preventDefault();
             }}
-            placeholder="Reply to this Thought…"
+            placeholder={`Reply to ${viewerHandle === opHandle ? thought.author : opName}…`}
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-muted-foreground"
           />
           <button
@@ -383,6 +412,9 @@ export function Thoughts({
           <Conversation
             key={thought.id}
             thought={thought}
+            opHandle={post.handle}
+            opName={post.author}
+            viewerHandle={myHandle}
             canReply={Boolean(myHandle) && (thought.handle === myHandle || isOp)}
             onBoost={toggleBoost}
             onReply={addReply}
