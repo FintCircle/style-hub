@@ -26,8 +26,14 @@ export const Route = createFileRoute("/api/public/media/upload")({
       POST: async ({ request }) => {
         const { getCfEnv, mediaUrl } = await import("@/lib/cf-env.server");
         const { viewerFrom } = await import("@/lib/auth.server");
-        const env = getCfEnv();
-        if (!env.DB || !env.MEDIA) return json({ error: "Uploads are only available on the live site." }, 503);
+        const env = getCfEnv(request);
+        if (!env.DB || !env.MEDIA) {
+          console.error("Missing Worker bindings", { DB: Boolean(env.DB), MEDIA: Boolean(env.MEDIA) });
+          return json(
+            { error: `Server is missing storage bindings (DB: ${Boolean(env.DB)}, MEDIA: ${Boolean(env.MEDIA)}).` },
+            503,
+          );
+        }
 
         const viewer = await viewerFrom(request);
         if (!viewer) return json({ error: "Please sign in to upload." }, 401);

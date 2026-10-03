@@ -27,6 +27,7 @@ export type CfEnv = {
   DB?: D1Database;
   MEDIA?: R2Bucket;
   CLERK_SECRET_KEY?: string;
+  CLERK_WEBHOOK_SECRET?: string;
   MEDIA_PUBLIC_URL?: string;
 };
 
@@ -36,16 +37,42 @@ export function setCfEnv(env: unknown) {
   if (env && typeof env === "object") (globalThis as Record<string, unknown>)[KEY] = env;
 }
 
-export function getCfEnv(): CfEnv {
-  return ((globalThis as Record<string, unknown>)[KEY] as CfEnv | undefined) ?? {};
+type AnyRecord = Record<string, unknown>;
+
+/**
+ * Resolves the Worker `env` bindings. In production Nitro's cloudflare-module entry
+ * receives `fetch(request, env, ctx)` first: it stores env on `globalThis.__env__`
+ * and on `request.runtime.cloudflare.env`. Our src/server.ts wrapper is NOT the
+ * outer Worker export, so its own capture alone is never enough.
+ */
+export function getCfEnv(request?: Request): CfEnv {
+  const g = globalThis as AnyRecord;
+  const req = request as unknown as
+    | { runtime?: { cloudflare?: { env?: AnyRecord } }; env?: AnyRecord }
+    | undefined;
+  const candidates = [
+    req?.runtime?.cloudflare?.env,
+    req?.env,
+    g.__env__ as AnyRecord | undefined,
+    g[KEY] as AnyRecord | undefined,
+  ];
+  const merged: AnyRecord = {};
+  for (const c of candidates.reverse()) if (c && typeof c === "object") Object.assign(merged, c);
+  if (!merged.DB && g.DB) merged.DB = g.DB;
+  if (!merged.MEDIA && g.MEDIA) merged.MEDIA = g.MEDIA;
+  return merged as CfEnv;
 }
 
-export function getDb(): D1Database | null {
-  return getCfEnv().DB ?? null;
+export function getDb(request?: Request): D1Database | null {
+  return getCfEnv(request).DB ?? null;
 }
 
 export function getClerkSecret(): string | undefined {
   return getCfEnv().CLERK_SECRET_KEY ?? process.env["CLERK_SECRET_KEY"];
+}
+
+export function getWebhookSecret(): string | undefined {
+  return getCfEnv().CLERK_WEBHOOK_SECRET ?? process.env["CLERK_WEBHOOK_SECRET"];
 }
 
 export function mediaUrl(key: string | null | undefined): string | null {
