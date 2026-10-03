@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { signInUrl, signUpUrl } from "@/lib/account";
+import { PortalLink } from "@/components/lebeho/PortalLink";
 import { InfoPage, InfoSection } from "@/components/lebeho/InfoPage";
 import { Button } from "@/components/ui/button";
 
@@ -21,10 +21,10 @@ function JoinPage() {
     <InfoSection title="Start with the conversation"><p>Explore what people are wearing, thinking, asking, and deciding right now.</p></InfoSection>
     <div className="flex flex-wrap gap-3">
       <Button asChild size="lg" className="rounded-full px-7">
-        <a href={signUpUrl("/")}>Create your account</a>
+        <PortalLink mode="sign-up" returnPath="/">Create your account</PortalLink>
       </Button>
       <Button asChild size="lg" variant="outline" className="rounded-full px-7">
-        <a href={signInUrl("/")}>Sign in</a>
+        <PortalLink mode="sign-in" returnPath="/">Sign in</PortalLink>
       </Button>
     </div>
     <p className="text-sm text-muted-foreground">

@@ -29,6 +29,7 @@ function Conversation({
   onBlock,
 }: ConversationProps) {
   const [expanded, setExpanded] = useState(false);
+  const requireAccount = useRequireAccount();
   const [draft, setDraft] = useState("");
   const replies = thought.replies ?? [];
   const canReply = thought.handle === me.handle || post.handle === me.handle;
@@ -147,6 +148,7 @@ function Conversation({
 
 export function Thoughts({ post }: { post: Post }) {
   const [thoughts, setThoughts] = useState(post.thoughts);
+  const requireAccount = useRequireAccount();
   const [boostedThoughtIds, setBoostedThoughtIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState("");
   const [thoughtsClosed, setThoughtsClosed] = useState(post.thoughtsClosed ?? false);
