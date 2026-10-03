@@ -73,10 +73,10 @@ export const flagThought = createServerFn({ method: "POST" })
   });
 
 export const blockUser = createServerFn({ method: "POST" })
-  .inputValidator((input: { profileId: string }) => z.object({ profileId: id }).parse(input))
+  .inputValidator((input: { thoughtId: string }) => z.object({ thoughtId: id }).parse(input))
   .handler(async ({ data }) => {
-    const { setUserBlocked } = await import("../server/thoughts");
+    const { blockThoughtAuthor } = await import("../server/thoughts");
     const { db, clerkUserId } = await actor();
-    await setUserBlocked(db, clerkUserId, data.profileId, true);
+    await blockThoughtAuthor(db, clerkUserId, data.thoughtId);
     return { ok: true };
   });

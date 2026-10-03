@@ -1,5 +1,19 @@
-import { ArrowUp, EyeOff, Flag, MessageCircle, UserRoundX } from "lucide-react";
+import {
+  ArrowUp,
+  EyeOff,
+  Flag,
+  MessageCircle,
+  MoreHorizontal,
+  UserRoundX,
+} from "lucide-react";
 import { useState } from "react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { ProfileLink } from "./ProfileLink";
 import { useRequireAccount } from "@/hooks/use-viewer";
 import type { Post, Reply, Thought } from "@/lib/lebeho-data";
@@ -92,43 +106,44 @@ function Conversation({
           </p>
           <p className="mt-2 text-[15px] leading-relaxed break-words">{thought.text}</p>
         </div>
-        <button
-          type="button"
-          onClick={() => onBoost(thought.id)}
-          aria-label={`${boostedByMe ? "Remove Boost from" : "Boost"} ${thought.author}'s Thought`}
-          aria-pressed={boostedByMe}
-          className={`flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium tabular-nums transition-colors ${boostedByMe ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary hover:text-primary"}`}
-        >
-          <ArrowUp aria-hidden="true" className="size-3.5" strokeWidth={2} />{" "}
-          <span>{thought.boosts}</span>
-        </button>
-      </div>
-      {isOp && (
-        <div className="mt-3 flex flex-wrap gap-4 border-t border-border pt-3">
+        <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
-            onClick={() => onReport(thought.id)}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            onClick={() => onBoost(thought.id)}
+            aria-label={`${boostedByMe ? "Remove Boost from" : "Boost"} ${thought.author}'s Thought`}
+            aria-pressed={boostedByMe}
+            className={`flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-xs font-medium tabular-nums transition-colors ${boostedByMe ? "border-primary bg-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary hover:text-primary"}`}
           >
-            <Flag className="size-3.5" /> Report
+            <ArrowUp aria-hidden="true" className="size-3.5" strokeWidth={2} />{" "}
+            <span>{thought.boosts}</span>
           </button>
-          <button
-            type="button"
-            onClick={() => onHide(thought.id)}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <EyeOff className="size-3.5" /> Hide
-          </button>
-          <button
-            type="button"
-            onClick={() => onBlock(thought)}
-            aria-label={`Block ${thought.author}`}
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-          >
-            <UserRoundX className="size-3.5" /> Block
-          </button>
+          {isOp && thought.handle !== opHandle && (
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                aria-label={`Moderation options for ${thought.author}'s Thought`}
+                className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <MoreHorizontal aria-hidden="true" className="size-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onSelect={() => onHide(thought.id)}>
+                  <EyeOff aria-hidden="true" className="size-4" /> Hide Thought
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => onReport(thought.id)}>
+                  <Flag aria-hidden="true" className="size-4" /> Report
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onSelect={() => onBlock(thought)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <UserRoundX aria-hidden="true" className="size-4" /> Block {thought.author}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
-      )}
+      </div>
       <button
         type="button"
         onClick={() => setExpanded((value) => !value)}
@@ -339,10 +354,8 @@ export function Thoughts({
 
   const blockAuthor = (thought: Thought) => {
     const message = `${thought.author} has been blocked from new interactions with you.`;
-    if (live && thought.authorId) {
-      const profileId = thought.authorId;
-      void runLive(() => blockUser({ data: { profileId } }), message);
-    } else setNotice(message);
+    if (live) void runLive(() => blockUser({ data: { thoughtId: thought.id } }), message);
+    else setNotice(message);
   };
 
   return (
