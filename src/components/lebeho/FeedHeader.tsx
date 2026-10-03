@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useClerk } from "@clerk/clerk-react";
-import { signUpUrl } from "@/lib/account";
+import { PortalLink } from "./PortalLink";
 import { useViewer } from "@/hooks/use-viewer";
 import { Menu, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -71,13 +71,14 @@ export function FeedHeader() {
                   <span className="text-[10px] text-muted-foreground">{profile?.handle ?? ""}</span>
                 </button>
               ) : (
-                <a
-                  href={signUpUrl("/")}
+                <PortalLink
+                  mode="sign-up"
+                  returnPath="/"
                   className="flex items-baseline justify-between border-b border-border py-5 text-left transition-colors hover:text-rush"
                 >
                   <span className="font-editorial text-2xl">Join LeBeHo</span>
                   <span className="text-[10px] text-muted-foreground">0{menuItems.length + 1}</span>
-                </a>
+                </PortalLink>
               )}
             </nav>
             <p className="px-7 pb-8 text-xs uppercase text-muted-foreground">Fashion is the conversation.</p>
