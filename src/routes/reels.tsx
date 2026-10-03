@@ -1,3 +1,4 @@
+import { ProfileLink } from "@/components/lebeho/ProfileLink";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Heart, Play } from "lucide-react";
@@ -74,7 +75,13 @@ function ReelSlide({ reel }: { reel: Reel }) {
 
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-6 p-6 pb-28 text-reels-foreground">
         <div className="min-w-0">
-          <p className="text-xl font-semibold tracking-tight">{reel.creator}</p>
+          <p className="text-xl font-semibold tracking-tight">
+            <ProfileLink
+              name={reel.creator}
+              handle={reel.handle}
+              className="underline-offset-4 hover:underline focus-visible:underline"
+            />
+          </p>
           <p className="text-xs uppercase tracking-[0.2em] opacity-70">
             {reel.handle} · {reel.duration}
           </p>

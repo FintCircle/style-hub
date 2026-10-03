@@ -1,14 +1,14 @@
 import { ChangeEvent, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AccountGate } from "@/components/lebeho/AccountGate";
 import { useViewer } from "@/hooks/use-viewer";
 import { uploadMedia } from "@/lib/account";
-import { updateProfile } from "@/lib/lebeho.functions";
+import { getPublicProfile, updateProfile } from "@/lib/lebeho.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Camera, Pencil, Plus } from "lucide-react";
 import { posts, reels, me } from "@/lib/lebeho-data";
-import { PostCard } from "@/components/lebeho/PostCard";
+import { ProfileActivity, ProfileStats } from "@/components/lebeho/ProfileActivity";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { ProfileLinks } from "@/components/lebeho/ProfileLinks";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,18 @@ function ProfilePage() {
   );
 }
 
-const tabs = ["Posts", "Thoughts", "Reels", "About"] as const;
+const sampleThoughts = posts
+  .flatMap((post) =>
+    post.thoughts.map((thought) => ({
+      id: thought.id,
+      text: thought.text,
+      time: thought.time,
+      postId: post.id,
+      postAuthor: post.author,
+    })),
+  )
+  .slice(0, 3);
+
 type ProfileDetails = {
   name: string;
   bio: string;
@@ -77,7 +88,6 @@ const initialProfile: ProfileDetails = {
 };
 
 function Profile() {
-  const [tab, setTab] = useState<(typeof tabs)[number]>("Posts");
   const [profile, setProfile] = useState(initialProfile);
   const [draft, setDraft] = useState(initialProfile);
   const [aboutDraft, setAboutDraft] = useState(initialProfile.about);
@@ -89,7 +99,11 @@ function Profile() {
   const queryClient = useQueryClient();
   const live = viewer.live && viewer.profile;
   const handle = viewer.profile?.handle ?? me.handle;
-  const mine = live ? [] : posts.slice(0, 2);
+  const activity = useQuery({
+    queryKey: ["profile", handle],
+    queryFn: () => getPublicProfile({ data: { handle } }),
+    enabled: Boolean(live),
+  });
 
   useEffect(() => {
     if (!viewer.profile) return;
@@ -106,6 +120,7 @@ function Profile() {
     const saved = await updateProfile({ data: { ...fields, ...(avatarMediaId ? { avatarMediaId } : {}) } });
     setAvatarFile(null);
     queryClient.invalidateQueries({ queryKey: ["viewer"] });
+    queryClient.invalidateQueries({ queryKey: ["profile"] });
     const { id: _id, handle: _h, ...details } = saved;
     return details;
   }
@@ -266,72 +281,19 @@ function Profile() {
           x={profile.x}
         />
 
-        <dl className="mt-6 grid grid-cols-5 gap-2 border-y border-border py-4 text-center">
-          {Object.entries(me.stats).map(([key, value]) => (
-            <div key={key}>
-              <dt className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
-                {key}
-              </dt>
-              <dd className="font-editorial text-lg">{value.toLocaleString()}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <div className="mt-6 flex gap-5">
-          {tabs.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => {
-                if (item === "About") {
-                  setAboutDraft(profile.about);
-                  setAboutOpen(true);
-                } else setTab(item);
-              }}
-              className={
-                "pb-2 text-[11px] uppercase tracking-[0.22em] transition-colors " +
-                (tab === item
-                  ? "border-b border-foreground text-foreground"
-                  : "text-muted-foreground")
-              }
-            >
-              {item}
-            </button>
-          ))}
-        </div>
+        <ProfileStats stats={live ? activity.data?.profile?.stats : me.stats} />
       </div>
 
-      <div className="mx-auto max-w-xl">
-        {tab === "Posts" && mine.map((post) => <PostCard key={post.id} post={post} />)}
-        {tab === "Thoughts" && (
-          <div className="space-y-6 px-5 py-8">
-            {posts
-              .flatMap((post) => post.thoughts.map((thought) => ({ thought, post })))
-              .slice(0, 3)
-              .map(({ thought, post }) => (
-                <div key={thought.id} className="border-b border-border pb-5">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                    On {post.author}'s post
-                  </p>
-                  <p className="mt-2 text-[15px] leading-relaxed">{thought.text}</p>
-                </div>
-              ))}
-          </div>
-        )}
-        {tab === "Reels" && (
-          <div className="grid grid-cols-3 gap-1 px-1 py-8">
-            {reels.map((reel) => (
-              <img
-                key={reel.id}
-                src={reel.poster}
-                alt={reel.caption}
-                loading="lazy"
-                className="aspect-[9/16] w-full object-cover"
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      <ProfileActivity
+        loading={Boolean(live) && activity.isLoading}
+        posts={live ? (activity.data?.posts ?? []) : posts.slice(0, 2)}
+        thoughts={live ? (activity.data?.thoughts ?? []) : sampleThoughts}
+        reels={live ? (activity.data?.reels ?? []) : reels}
+        onAbout={() => {
+          setAboutDraft(profile.about);
+          setAboutOpen(true);
+        }}
+      />
 
       <Sheet open={aboutOpen} onOpenChange={setAboutOpen}>
         <SheetContent side="bottom" className="mx-auto max-w-xl rounded-t-2xl">
