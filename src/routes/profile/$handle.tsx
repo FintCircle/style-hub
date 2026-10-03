@@ -4,6 +4,7 @@ import { ArrowLeft, Pencil } from "lucide-react";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { ProfileLinks } from "@/components/lebeho/ProfileLinks";
 import { ProfileActivity, ProfileStats } from "@/components/lebeho/ProfileActivity";
+import { AboutContent } from "@/components/lebeho/AboutContent";
 import { useViewer } from "@/hooks/use-viewer";
 import { getPublicProfile } from "@/lib/lebeho.functions";
 import { getProfile, posts, reels } from "@/lib/lebeho-data";
@@ -114,14 +115,25 @@ function PublicProfile() {
         />
       </main>
       <Sheet open={aboutOpen} onOpenChange={setAboutOpen}>
-        <SheetContent side="bottom" className="mx-auto max-w-xl rounded-t-2xl">
-          <SheetHeader>
-            <SheetTitle className="font-editorial text-2xl">About {profile.name}</SheetTitle>
-            <SheetDescription>{profile.bio || profile.handle}</SheetDescription>
+        <SheetContent
+          side="bottom"
+          className="mx-auto flex max-h-[90dvh] max-w-xl flex-col gap-0 rounded-t-2xl p-0"
+        >
+          <SheetHeader className="shrink-0 border-b border-border px-5 pb-4 pt-6 pr-12 text-left sm:px-6">
+            <SheetTitle className="text-balance font-editorial text-2xl leading-tight">
+              About {profile.name}
+            </SheetTitle>
+            <SheetDescription className="text-pretty">{profile.bio || profile.handle}</SheetDescription>
           </SheetHeader>
-          <p className="py-6 text-[15px] leading-relaxed">
-            {profile.about || "No about yet — check back soon to get to know them better."}
-          </p>
+          <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 sm:px-6">
+            {profile.about ? (
+              <AboutContent text={profile.about} />
+            ) : (
+              <p className="text-[15px] leading-relaxed text-muted-foreground">
+                No about yet — check back soon to get to know them better.
+              </p>
+            )}
+          </div>
         </SheetContent>
       </Sheet>
       <BottomNav />
