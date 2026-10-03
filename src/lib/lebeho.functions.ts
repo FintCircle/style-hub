@@ -68,7 +68,18 @@ export const listFeed = createServerFn({ method: "POST" })
       .bind(...binds)
       .all<PostRow>();
     if (!rows.length) return { live: true, posts: [] };
+    return { live: true, posts: await hydratePosts(db, rows, viewer?.profile.id ?? null, mediaUrl) };
+  });
 
+type Db = NonNullable<ReturnType<typeof import("./cf-env.server").getDb>>;
+
+/** Adds images, vote tallies and the viewer's vote to D1 post rows. */
+async function hydratePosts(
+  db: Db,
+  rows: PostRow[],
+  viewerId: string | null,
+  mediaUrl: (key: string | null | undefined) => string | null,
+): Promise<Post[]> {
     const ids = rows.map((r) => r.id);
     const [images, choices, myVotes] = await Promise.all([
       db
@@ -86,10 +97,10 @@ export const listFeed = createServerFn({ method: "POST" })
         )
         .bind(...ids)
         .all<{ id: string; post_id: string; label: string; votes: number }>(),
-      viewer
+      viewerId
         ? db
             .prepare(`SELECT post_id, choice_id FROM votes WHERE user_id = ? AND post_id IN (${placeholders(ids.length)})`)
-            .bind(viewer.profile.id, ...ids)
+            .bind(viewerId, ...ids)
             .all<{ post_id: string; choice_id: string }>()
         : Promise.resolve({ results: [] as { post_id: string; choice_id: string }[] }),
     ]);
@@ -117,8 +128,102 @@ export const listFeed = createServerFn({ method: "POST" })
       if (r.is_rush_hour && r.rush_hour_ends_at) post.rushEndsAt = new Date(r.rush_hour_ends_at).getTime();
       return post;
     });
-    return { live: true, posts };
-  });
+    return posts;
+}
+
+const POST_SELECT = `SELECT p.id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour, p.hashtag_slug,
+  p.thoughts_closed, pr.display_name, pr.username,
+  (SELECT COUNT(*) FROM thoughts t WHERE t.post_id = p.id AND t.deleted_at IS NULL AND t.is_hidden = 0) AS thought_count
+FROM posts p JOIN profiles pr ON pr.id = p.author_id`;
+
+/** One post with its visible Thoughts and their conversations, for /posts/$postId. */
+export const getPostDetail = createServerFn({ method: "POST" })
+  .inputValidator((input: { postId: string }) =>
+    z.object({ postId: z.string().min(1).max(64) }).parse(input),
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{ live: boolean; post: Post | null; boostedThoughtIds: string[] }> => {
+      const { getDb, mediaUrl } = await import("./cf-env.server");
+      const { viewerFrom } = await import("./auth.server");
+      const db = getDb(getRequest());
+      if (!db) return { live: false, post: null, boostedThoughtIds: [] };
+      const viewer = await viewerFrom(getRequest()).catch(() => null);
+      const viewerId = viewer?.profile.id ?? "";
+
+      const row = await db
+        .prepare(`${POST_SELECT} WHERE p.id = ? AND p.deleted_at IS NULL`)
+        .bind(data.postId)
+        .first<PostRow>();
+      if (!row) return { live: true, post: null, boostedThoughtIds: [] };
+
+      const [[post], thoughts, replies] = await Promise.all([
+        hydratePosts(db, [row], viewerId || null, mediaUrl),
+        db
+          .prepare(
+            `SELECT t.id, t.author_id, t.body, t.created_at, pr.display_name, pr.username,
+              (SELECT COUNT(*) FROM thought_boosts b WHERE b.thought_id = t.id) AS boosts,
+              (SELECT COUNT(*) FROM thought_boosts b WHERE b.thought_id = t.id AND b.user_id = ?) AS mine
+            FROM thoughts t JOIN profiles pr ON pr.id = t.author_id
+            WHERE t.post_id = ? AND t.deleted_at IS NULL AND t.is_hidden = 0
+            ORDER BY boosts DESC, t.created_at ASC`,
+          )
+          .bind(viewerId, data.postId)
+          .all<{
+            id: string;
+            author_id: string;
+            body: string;
+            created_at: string;
+            display_name: string;
+            username: string;
+            boosts: number;
+            mine: number;
+          }>(),
+        db
+          .prepare(
+            `SELECT r.id, r.thought_id, r.body, r.created_at, pr.display_name, pr.username
+            FROM thought_replies r JOIN thoughts t ON t.id = r.thought_id
+            JOIN profiles pr ON pr.id = r.author_id
+            WHERE t.post_id = ? AND r.deleted_at IS NULL ORDER BY r.created_at`,
+          )
+          .bind(data.postId)
+          .all<{
+            id: string;
+            thought_id: string;
+            body: string;
+            created_at: string;
+            display_name: string;
+            username: string;
+          }>(),
+      ]);
+
+      if (!post) return { live: true, post: null, boostedThoughtIds: [] };
+      post.thoughts = thoughts.results.map((t) => ({
+        id: t.id,
+        authorId: t.author_id,
+        author: t.display_name,
+        handle: `@${t.username}`,
+        text: t.body,
+        time: relativeTime(t.created_at),
+        boosts: Number(t.boosts),
+        replies: replies.results
+          .filter((r) => r.thought_id === t.id)
+          .map((r) => ({
+            id: r.id,
+            author: r.display_name,
+            handle: `@${r.username}`,
+            text: r.body,
+            time: relativeTime(r.created_at),
+          })),
+      }));
+      return {
+        live: true,
+        post,
+        boostedThoughtIds: thoughts.results.filter((t) => Number(t.mine)).map((t) => t.id),
+      };
+    },
+  );
 
 const createPostSchema = z.object({
   text: z.string().trim().max(2000),

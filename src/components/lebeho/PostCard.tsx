@@ -19,7 +19,14 @@ export function PostCard({ post }: { post: Post }) {
             <ProfileLink name={post.author} handle={post.handle} />
           </h3>
           <p className="mt-1 text-xs tracking-wide text-muted-foreground">
-            {post.handle} · {post.time}
+            {post.handle} ·{" "}
+            <Link
+              to="/posts/$postId"
+              params={{ postId: post.id }}
+              className="hover:text-foreground hover:underline"
+            >
+              {post.time}
+            </Link>
           </p>
         </div>
         {live && (
@@ -29,15 +36,13 @@ export function PostCard({ post }: { post: Post }) {
         )}
       </header>
 
-      {post.live ? (
-        post.text && <p className="mt-4 text-[17px] leading-relaxed">{post.text}</p>
-      ) : (
+      {post.text && (
         <Link
           to="/posts/$postId"
           params={{ postId: post.id }}
           className="mt-4 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
-          <p className="text-[17px] leading-relaxed">{post.text}</p>
+          <p className="text-[17px] leading-relaxed break-words">{post.text}</p>
         </Link>
       )}
       {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-3" />}
@@ -57,21 +62,14 @@ export function PostCard({ post }: { post: Post }) {
         </p>
       )}
 
-      {post.live ? (
-        <p className="mt-5 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          <MessageSquareQuote className="size-4" strokeWidth={1.5} /> {post.thoughtCount ?? 0} Stylist
-          thoughts
-        </p>
-      ) : (
-        <Link
-          to="/posts/$postId"
-          params={{ postId: post.id }}
-          className="mt-5 flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <MessageSquareQuote className="size-4" strokeWidth={1.5} /> {post.thoughts.length} Stylist
-          thoughts
-        </Link>
-      )}
+      <Link
+        to="/posts/$postId"
+        params={{ postId: post.id }}
+        className="mt-5 flex w-fit items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
+      >
+        <MessageSquareQuote className="size-4" strokeWidth={1.5} />{" "}
+        {post.thoughtCount ?? post.thoughts.length} Stylist thoughts
+      </Link>
     </article>
   );
 }
