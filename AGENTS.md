@@ -10,3 +10,8 @@
 <!-- LOVABLE:END -->
 
 - Keep informational pages on dedicated routes and render them through the shared InfoPage shell so navigation and editorial presentation stay consistent.
+- Auth is Clerk (hosted portal) with a browser ClerkProvider; server code verifies the bearer session token with @clerk/backend, because the app runs on Cloudflare Workers without a Clerk server SDK.
+- Cloudflare bindings (DB, MEDIA, secrets) are captured from the Worker `env` in src/server.ts and read via src/lib/cf-env.server.ts; without bindings, server functions return `live: false` and the UI shows sample content.
+- D1 profiles are created lazily on first authenticated request (ensureProfile), keyed by Clerk user ID; never trust a profile ID from the browser.
+- Files go to R2 only through /api/public/media/upload; D1 stores the object key and metadata, and public URLs are built from the media domain.
+- D1 schema lives in migrations/*.sql and is applied by the owner with wrangler.
