@@ -16,6 +16,8 @@ export type Reply = {
 /** A public one-to-one conversation between the poster and a Thought author. */
 export type Thought = {
   id: string;
+  /** D1 profile id of the Thought author (live posts only), used for blocking. */
+  authorId?: string;
   author: string;
   handle: string;
   text: string;
