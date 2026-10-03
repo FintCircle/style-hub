@@ -9,6 +9,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Camera, Pencil, Plus } from "lucide-react";
 import { posts, reels, me } from "@/lib/lebeho-data";
 import { ProfileActivity, ProfileStats } from "@/components/lebeho/ProfileActivity";
+import { AboutContent, AboutEditor } from "@/components/lebeho/AboutContent";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { ProfileLinks } from "@/components/lebeho/ProfileLinks";
 import { Button } from "@/components/ui/button";
@@ -296,29 +297,34 @@ function Profile() {
       />
 
       <Sheet open={aboutOpen} onOpenChange={setAboutOpen}>
-        <SheetContent side="bottom" className="mx-auto max-w-xl rounded-t-2xl">
-          <SheetHeader>
-            <SheetTitle className="font-editorial text-2xl">About {profile.name}</SheetTitle>
-            <SheetDescription>
+        <SheetContent
+          side="bottom"
+          className="mx-auto flex max-h-[90dvh] max-w-xl flex-col gap-0 rounded-t-2xl p-0"
+        >
+          <SheetHeader className="shrink-0 border-b border-border px-5 pb-4 pt-6 pr-12 text-left sm:px-6">
+            <SheetTitle className="text-balance font-editorial text-2xl leading-tight">
+              About {profile.name}
+            </SheetTitle>
+            <SheetDescription className="text-pretty">
               Your story, your point of view, and what you are about.
             </SheetDescription>
           </SheetHeader>
-          <div className="py-6">
-            <Textarea
-              aria-label="About"
-              className="min-h-48"
-              maxLength={1200}
-              placeholder="Share your story, your style, and what people should know about you..."
-              value={aboutDraft}
-              onChange={(e) => setAboutDraft(e.target.value)}
-            />
-            {!profile.about && !aboutDraft && (
-              <p className="mt-3 text-sm text-muted-foreground">
-                No about yet — add a few words to help your people get to know you.
-              </p>
+          <div className="flex-1 space-y-6 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
+            <AboutEditor value={aboutDraft} onChange={setAboutDraft} maxLength={1200} />
+            {aboutDraft.trim() ? (
+              <section aria-label="Preview" className="space-y-3">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preview</p>
+                <AboutContent text={aboutDraft} />
+              </section>
+            ) : (
+              !profile.about && (
+                <p className="text-sm text-muted-foreground">
+                  No about yet — add a few words to help your people get to know you.
+                </p>
+              )
             )}
           </div>
-          <SheetFooter>
+          <SheetFooter className="shrink-0 flex-row justify-end gap-2 border-t border-border px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
             <SheetClose asChild>
               <Button variant="ghost">Cancel</Button>
             </SheetClose>
