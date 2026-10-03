@@ -33,7 +33,7 @@ type PostRow = {
 export const getViewer = createServerFn({ method: "POST" }).handler(async () => {
   const { viewerFrom, toPublicProfile } = await import("./auth.server");
   const { getDb } = await import("./cf-env.server");
-  if (!getDb()) return { live: false as const, profile: null };
+  if (!getDb(getRequest())) return { live: false as const, profile: null };
   const viewer = await viewerFrom(getRequest());
   return { live: true as const, profile: viewer ? toPublicProfile(viewer.profile) : null };
 });
@@ -48,7 +48,7 @@ export const listFeed = createServerFn({ method: "POST" })
   .handler(async ({ data }): Promise<{ live: boolean; posts: Post[] }> => {
     const { getDb, mediaUrl } = await import("./cf-env.server");
     const { viewerFrom } = await import("./auth.server");
-    const db = getDb();
+    const db = getDb(getRequest());
     if (!db) return { live: false, posts: [] };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
 
@@ -279,7 +279,7 @@ export const listReels = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ live: boolean; reels: Reel[] }> => {
     const { getDb, mediaUrl } = await import("./cf-env.server");
     const { viewerFrom } = await import("./auth.server");
-    const db = getDb();
+    const db = getDb(getRequest());
     if (!db) return { live: false, reels: [] };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
     const { results } = await db
