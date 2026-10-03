@@ -6,10 +6,11 @@ import { useViewer } from "@/hooks/use-viewer";
 import { uploadMedia } from "@/lib/account";
 import { updateProfile } from "@/lib/lebeho.functions";
 import { createFileRoute } from "@tanstack/react-router";
-import { Camera, ExternalLink, Pencil, Plus } from "lucide-react";
+import { Camera, Pencil, Plus } from "lucide-react";
 import { posts, reels, me } from "@/lib/lebeho-data";
 import { PostCard } from "@/components/lebeho/PostCard";
 import { BottomNav } from "@/components/lebeho/BottomNav";
+import { ProfileLinks } from "@/components/lebeho/ProfileLinks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -151,12 +152,6 @@ function Profile() {
     }
   };
 
-  const socialLinks = [
-    ["Instagram", profile.instagram],
-    ["TikTok", profile.tiktok],
-    ["X", profile.x],
-  ].filter(([, value]) => value);
-
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="mx-auto max-w-xl px-5 pt-10">
@@ -264,26 +259,12 @@ function Profile() {
             Tell people a little about your style.
           </p>
         )}
-        {(profile.website || socialLinks.length > 0) && (
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm underline underline-offset-4">
-            {profile.website && (
-              <a
-                className="inline-flex items-center gap-1"
-                href={profile.website}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <ExternalLink className="size-3.5" />
-                {profile.website}
-              </a>
-            )}
-            {socialLinks.map(([network, handle]) => (
-              <span key={network}>
-                {network}: {handle}
-              </span>
-            ))}
-          </div>
-        )}
+        <ProfileLinks
+          website={profile.website}
+          instagram={profile.instagram}
+          tiktok={profile.tiktok}
+          x={profile.x}
+        />
 
         <dl className="mt-6 grid grid-cols-5 gap-2 border-y border-border py-4 text-center">
           {Object.entries(me.stats).map(([key, value]) => (
