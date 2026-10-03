@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AccountGate } from "@/components/lebeho/AccountGate";
 import { useViewer } from "@/hooks/use-viewer";
+import { useTheme, themeLabel, type ThemePreference } from "@/components/lebeho/ThemeProvider";
 import { uploadMedia } from "@/lib/account";
 import { getPublicProfile, updateProfile } from "@/lib/lebeho.functions";
 import { createFileRoute } from "@tanstack/react-router";
@@ -97,6 +98,7 @@ function Profile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const viewer = useViewer();
+  const { preference, resolvedTheme, setPreference } = useTheme();
   const queryClient = useQueryClient();
   const live = viewer.live && viewer.profile;
   const handle = viewer.profile?.handle ?? me.handle;
@@ -281,6 +283,30 @@ function Profile() {
           tiktok={profile.tiktok}
           x={profile.x}
         />
+
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
+          <div>
+            <p className="text-sm font-medium">Appearance</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {preference === "system"
+                ? `Following your device · ${resolvedTheme === "dark" ? "Dark" : "Light"}`
+                : `${themeLabel(preference)} mode`}
+            </p>
+          </div>
+          <div className="flex rounded-lg border border-border p-1" role="group" aria-label="Choose appearance">
+            {(["system", "light", "dark"] as ThemePreference[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                aria-pressed={preference === option}
+                onClick={() => setPreference(option)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${preference === option ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"}`}
+              >
+                {themeLabel(option)}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <ProfileStats stats={live ? activity.data?.profile?.stats : me.stats} />
       </div>

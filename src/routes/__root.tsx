@@ -13,6 +13,7 @@ import { useEffect, type ReactNode } from "react";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { CLERK_PUBLISHABLE_KEY, ACCOUNTS_URL } from "../lib/account";
 import { Toaster } from "../components/ui/sonner";
+import { ThemeProvider } from "../components/lebeho/ThemeProvider";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -151,9 +152,11 @@ function RootComponent() {
       afterSignOutUrl="/"
     >
       <QueryClientProvider client={queryClient}>
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
-        <Toaster />
+        <ThemeProvider>
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+          <Toaster />
+        </ThemeProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );
