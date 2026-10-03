@@ -17,11 +17,23 @@ export const Route = createFileRoute("/hashtags/$hashtag")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `#${loaderData?.hashtag?.name ?? loaderData?.slug ?? "Hashtag"} — LeBeHo` },
+      {
+        title: `Explore #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "fashion"} Fashion Posts | LeBeHo`,
+      },
       {
         name: "description",
-        content: `Public fashion posts in #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "this discovery space"}.`,
+        content: `Explore honest outfit advice, style conversations, and fashion inspiration tagged #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "fashion"} on LeBeHo.`,
       },
+      {
+        property: "og:title",
+        content: `Explore #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "fashion"} Fashion Posts | LeBeHo`,
+      },
+      {
+        property: "og:description",
+        content: `Find fashion conversations and style inspiration from the LeBeHo community under #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "fashion"}.`,
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: HashtagPage,

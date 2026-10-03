@@ -1,7 +1,7 @@
 import { ProfileLink } from "@/components/lebeho/ProfileLink";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Heart, Play } from "lucide-react";
+import { Heart, Play, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 import type { Reel } from "@/lib/lebeho-data";
 import { useReels } from "@/hooks/use-feed";
@@ -28,6 +28,7 @@ export const Route = createFileRoute("/reels")({
 
 function ReelSlide({ reel }: { reel: Reel }) {
   const [liked, setLiked] = useState(Boolean(reel.likedByViewer));
+  const [muted, setMuted] = useState(true);
   const requireAccount = useRequireAccount();
   const baseLikes = reel.likes - (reel.likedByViewer ? 1 : 0);
 
@@ -53,7 +54,7 @@ function ReelSlide({ reel }: { reel: Reel }) {
           className="absolute inset-0 size-full object-cover"
           playsInline
           loop
-          muted
+          muted={muted}
           autoPlay
           preload="metadata"
         />
@@ -66,6 +67,17 @@ function ReelSlide({ reel }: { reel: Reel }) {
         />
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-black/40" />
+
+      {reel.video && (
+        <button
+          type="button"
+          onClick={() => setMuted((value) => !value)}
+          aria-label={muted ? "Turn reel sound on" : "Mute reel"}
+          className="absolute right-5 top-5 z-10 flex size-11 items-center justify-center rounded-full border border-white/40 bg-black/30 text-reels-foreground backdrop-blur-sm transition-colors hover:bg-black/50"
+        >
+          {muted ? <VolumeX aria-hidden="true" /> : <Volume2 aria-hidden="true" />}
+        </button>
+      )}
 
       {!reel.video && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/50 p-5 text-reels-foreground opacity-80">
