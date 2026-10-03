@@ -53,13 +53,13 @@ export function getCfEnv(request?: Request): CfEnv {
   const candidates = [
     req?.runtime?.cloudflare?.env,
     req?.env,
-    g.__env__ as AnyRecord | undefined,
+    g['__env__'] as AnyRecord | undefined,
     g[KEY] as AnyRecord | undefined,
   ];
   const merged: AnyRecord = {};
   for (const c of candidates.reverse()) if (c && typeof c === "object") Object.assign(merged, c);
-  if (!merged.DB && g.DB) merged.DB = g.DB;
-  if (!merged.MEDIA && g.MEDIA) merged.MEDIA = g.MEDIA;
+  if (!merged['DB'] && g['DB']) merged['DB'] = g['DB'];
+  if (!merged['MEDIA'] && g['MEDIA']) merged['MEDIA'] = g['MEDIA'];
   return merged as CfEnv;
 }
 
