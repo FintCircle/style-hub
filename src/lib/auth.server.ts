@@ -78,7 +78,7 @@ export async function ensureProfile(db: D1Database, clerkUserId: string): Promis
 
 /** Signed-in viewer for a request, or null (signed out / outside Cloudflare). */
 export async function viewerFrom(request: Request) {
-  const db = getDb();
+  const db = getDb(request);
   if (!db) return null;
   const clerkUserId = await clerkUserIdFrom(request);
   if (!clerkUserId) return null;
@@ -86,7 +86,7 @@ export async function viewerFrom(request: Request) {
 }
 
 export async function requireViewer(request: Request) {
-  if (!getDb()) throw new Error("LeBeHo's database is only available on the live site.");
+  if (!getDb(request)) throw new Error("Server is missing the DB binding.");
   const viewer = await viewerFrom(request);
   if (!viewer) throw new Error("Please sign in to continue.");
   return viewer;
