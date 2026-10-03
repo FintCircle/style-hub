@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import type { Post, Reel } from "./lebeho-data";
+import type { Post, Profile, ProfileThought, Reel } from "./lebeho-data";
 
 function relativeTime(iso: string) {
   const then = new Date(iso.includes("T") ? iso : `${iso.replace(" ", "T")}Z`).getTime();
@@ -388,46 +388,143 @@ export const listReels = createServerFn({ method: "POST" }).handler(
     if (!db) return { live: false, reels: [] };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
     const { results } = await db
-      .prepare(
-        `SELECT r.id, r.caption, r.duration_ms, pr.display_name, pr.username, v.r2_key AS video_key,
-          pm.r2_key AS poster_key,
-          (SELECT COUNT(*) FROM reel_likes l WHERE l.reel_id = r.id) AS likes,
-          (SELECT COUNT(*) FROM reel_likes l WHERE l.reel_id = r.id AND l.user_id = ?) AS mine
-        FROM reels r JOIN profiles pr ON pr.id = r.author_id JOIN media v ON v.id = r.video_media_id
-        LEFT JOIN media pm ON pm.id = r.poster_media_id
-        WHERE r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 40`,
-      )
+      .prepare(`${REEL_SELECT} WHERE r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 40`)
       .bind(viewer?.profile.id ?? "")
-      .all<{
-        id: string;
-        caption: string;
-        duration_ms: number;
-        display_name: string;
-        username: string;
-        video_key: string;
-        poster_key: string | null;
-        likes: number;
-        mine: number;
-      }>();
-    return {
-      live: true,
-      reels: results.map((r) => {
-        const secs = Math.round(r.duration_ms / 1000);
-        return {
-          id: r.id,
-          creator: r.display_name,
-          handle: `@${r.username}`,
-          caption: r.caption,
-          poster: mediaUrl(r.poster_key) ?? "",
-          video: mediaUrl(r.video_key)!,
-          likes: Number(r.likes),
-          likedByViewer: Boolean(r.mine),
-          duration: `0:${String(secs).padStart(2, "0")}`,
-        };
-      }),
-    };
+      .all<ReelRow>();
+    return { live: true, reels: results.map((r) => toReel(r, mediaUrl)) };
   },
 );
+
+const REEL_SELECT = `SELECT r.id, r.caption, r.duration_ms, pr.display_name, pr.username, v.r2_key AS video_key,
+  pm.r2_key AS poster_key,
+  (SELECT COUNT(*) FROM reel_likes l WHERE l.reel_id = r.id) AS likes,
+  (SELECT COUNT(*) FROM reel_likes l WHERE l.reel_id = r.id AND l.user_id = ?) AS mine
+FROM reels r JOIN profiles pr ON pr.id = r.author_id JOIN media v ON v.id = r.video_media_id
+LEFT JOIN media pm ON pm.id = r.poster_media_id`;
+
+function toReel(r: ReelRow, mediaUrl: (key: string | null | undefined) => string | null): Reel {
+  const secs = Math.round(r.duration_ms / 1000);
+  return {
+    id: r.id,
+    creator: r.display_name,
+    handle: `@${r.username}`,
+    caption: r.caption,
+    poster: mediaUrl(r.poster_key) ?? "",
+    video: mediaUrl(r.video_key)!,
+    likes: Number(r.likes),
+    likedByViewer: Boolean(r.mine),
+    duration: `0:${String(secs).padStart(2, "0")}`,
+  };
+}
+
+type ReelRow = {
+  id: string;
+  caption: string;
+  duration_ms: number;
+  display_name: string;
+  username: string;
+  video_key: string;
+  poster_key: string | null;
+  likes: number;
+  mine: number;
+};
+
+/** A D1 profile page: details, real stats, and the person's posts, Thoughts and reels. */
+export const getPublicProfile = createServerFn({ method: "POST" })
+  .inputValidator((input: { handle: string }) =>
+    z.object({ handle: z.string().trim().min(1).max(41) }).parse(input),
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{
+      live: boolean;
+      profile: Profile | null;
+      posts: Post[];
+      thoughts: ProfileThought[];
+      reels: Reel[];
+    }> => {
+      const { getDb, mediaUrl } = await import("./cf-env.server");
+      const { viewerFrom, toPublicProfile } = await import("./auth.server");
+      const db = getDb(getRequest());
+      const empty = { profile: null, posts: [], thoughts: [], reels: [] };
+      if (!db) return { live: false, ...empty };
+
+      const username = data.handle.replace(/^@/, "").toLowerCase();
+      const row = await db.prepare("SELECT * FROM profiles WHERE username = ?").bind(username).first();
+      if (!row) return { live: true, ...empty };
+      const pub = toPublicProfile(row as never);
+      const authorId = pub.id;
+      const viewer = await viewerFrom(getRequest()).catch(() => null);
+      const viewerId = viewer?.profile.id ?? "";
+
+      const [stats, postRows, thoughtRows, reelRows] = await Promise.all([
+        db
+          .prepare(
+            `SELECT
+              (SELECT COUNT(*) FROM posts WHERE author_id = ?1 AND deleted_at IS NULL) AS posts,
+              (SELECT COUNT(*) FROM thoughts WHERE author_id = ?1 AND deleted_at IS NULL AND is_hidden = 0) AS thoughts,
+              (SELECT COUNT(*) FROM reels WHERE author_id = ?1 AND deleted_at IS NULL) AS reels,
+              (SELECT COUNT(*) FROM reel_likes l JOIN reels r ON r.id = l.reel_id
+                WHERE r.author_id = ?1 AND r.deleted_at IS NULL) AS likes,
+              (SELECT COUNT(*) FROM thought_boosts b JOIN thoughts t ON t.id = b.thought_id
+                WHERE t.author_id = ?1 AND t.deleted_at IS NULL) AS boosts`,
+          )
+          .bind(authorId)
+          .first<Record<"posts" | "thoughts" | "reels" | "likes" | "boosts", number>>(),
+        db
+          .prepare(`${POST_SELECT} WHERE p.author_id = ? AND p.deleted_at IS NULL ORDER BY p.created_at DESC LIMIT 40`)
+          .bind(authorId)
+          .all<PostRow>(),
+        db
+          .prepare(
+            `SELECT t.id, t.body, t.created_at, t.post_id, op.display_name AS op_name
+            FROM thoughts t JOIN posts p ON p.id = t.post_id JOIN profiles op ON op.id = p.author_id
+            WHERE t.author_id = ? AND t.deleted_at IS NULL AND t.is_hidden = 0 AND p.deleted_at IS NULL
+            ORDER BY t.created_at DESC LIMIT 40`,
+          )
+          .bind(authorId)
+          .all<{ id: string; body: string; created_at: string; post_id: string; op_name: string }>(),
+        db
+          .prepare(
+            `${REEL_SELECT} WHERE r.deleted_at IS NULL AND r.author_id = ? ORDER BY r.created_at DESC LIMIT 40`,
+          )
+          .bind(viewerId, authorId)
+          .all<ReelRow>(),
+      ]);
+
+      return {
+        live: true,
+        profile: {
+          name: pub.name,
+          handle: pub.handle,
+          bio: pub.bio,
+          about: pub.about,
+          website: pub.website,
+          avatar: pub.avatar,
+          socials: { instagram: pub.instagram, tiktok: pub.tiktok, x: pub.x },
+          stats: {
+            posts: Number(stats?.posts ?? 0),
+            thoughts: Number(stats?.thoughts ?? 0),
+            reels: Number(stats?.reels ?? 0),
+            likes: Number(stats?.likes ?? 0),
+            boosts: Number(stats?.boosts ?? 0),
+          },
+        },
+        posts: postRows.results.length
+          ? await hydratePosts(db, postRows.results, viewerId || null, mediaUrl)
+          : [],
+        thoughts: thoughtRows.results.map((t) => ({
+          id: t.id,
+          text: t.body,
+          time: relativeTime(t.created_at),
+          postId: t.post_id,
+          postAuthor: t.op_name,
+        })),
+        reels: reelRows.results.map((r) => toReel(r, mediaUrl)),
+      };
+    },
+  );
 
 export const setReelLiked = createServerFn({ method: "POST" })
   .inputValidator((input: { reelId: string; liked: boolean }) =>

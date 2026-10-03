@@ -271,6 +271,14 @@ export const me = {
   stats: { posts: 24, thoughts: 118, reels: 6, likes: 1240, boosts: 86 },
 };
 
+export type ProfileThought = {
+  id: string;
+  text: string;
+  time: string;
+  postId: string;
+  postAuthor: string;
+};
+
 export type Profile = {
   name: string;
   handle: string;
