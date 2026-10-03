@@ -38,6 +38,43 @@ export const getViewer = createServerFn({ method: "POST" }).handler(async () => 
   return { live: true as const, profile: viewer ? toPublicProfile(viewer.profile) : null };
 });
 
+export const searchHashtags = createServerFn({ method: "POST" })
+  .inputValidator((input: { query?: string }) =>
+    z.object({ query: z.string().max(40).optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { getDb } = await import("./cf-env.server");
+    const db = getDb(getRequest());
+    if (!db) return { live: false as const, hashtags: [] as { slug: string; name: string }[] };
+    const query = (data.query ?? "").replace(/^#/, "").trim().toLowerCase();
+    const { results } = await db
+      .prepare(
+        `SELECT slug, name FROM hashtags
+         WHERE ? = '' OR slug LIKE ? OR name LIKE ?
+         ORDER BY CASE WHEN slug = ? THEN 0 ELSE 1 END, created_at DESC LIMIT 12`,
+      )
+      .bind(query, `${query}%`, `${query}%`, query)
+      .all<{ slug: string; name: string }>();
+    return { live: true as const, hashtags: results };
+  });
+
+export const getHashtagPage = createServerFn({ method: "POST" })
+  .inputValidator((input: { slug: string }) => z.object({ slug: z.string().regex(/^[a-z0-9]{1,40}$/) }).parse(input))
+  .handler(async ({ data }) => {
+    const { getDb, mediaUrl } = await import("./cf-env.server");
+    const { viewerFrom } = await import("./auth.server");
+    const db = getDb(getRequest());
+    if (!db) return { live: false as const, hashtag: null, posts: [] as Post[] };
+    const hashtag = await db.prepare("SELECT slug, name FROM hashtags WHERE slug = ?").bind(data.slug).first<{ slug: string; name: string }>();
+    if (!hashtag) return { live: true as const, hashtag: null, posts: [] as Post[] };
+    const viewer = await viewerFrom(getRequest()).catch(() => null);
+    const { results } = await db
+      .prepare(`${POST_SELECT} WHERE p.hashtag_slug = ? AND p.deleted_at IS NULL ORDER BY p.created_at DESC LIMIT 60`)
+      .bind(data.slug)
+      .all<PostRow>();
+    return { live: true as const, hashtag, posts: await hydratePosts(db, results, viewer?.profile.id ?? null, mediaUrl) };
+  });
+
 /** Discovery feed. `live: false` means no database here (preview) — show samples. */
 export const listFeed = createServerFn({ method: "POST" })
   .inputValidator((input: { rushOnly?: boolean; authorHandle?: string } | undefined) =>
