@@ -1,6 +1,7 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { BottomNav } from "@/components/lebeho/BottomNav";
+import { ProfileLinks } from "@/components/lebeho/ProfileLinks";
 import { PostCard } from "@/components/lebeho/PostCard";
 import { getProfile, posts } from "@/lib/lebeho-data";
 import { Button } from "@/components/ui/button";
@@ -31,11 +32,6 @@ export const Route = createFileRoute("/profile/$handle")({
 function PublicProfile() {
   const profile = Route.useLoaderData();
   const authoredPosts = posts.filter((post) => post.handle === profile.handle);
-  const socialLinks = [
-    ["Instagram", profile.socials?.instagram],
-    ["TikTok", profile.socials?.tiktok],
-    ["X", profile.socials?.x],
-  ].filter(([, handle]) => handle);
   return (
     <div className="min-h-screen bg-background pb-24">
       <main className="mx-auto max-w-xl">
@@ -64,26 +60,12 @@ function PublicProfile() {
             </div>
           </div>
           <p className="mt-5 text-[15px] leading-relaxed">{profile.bio}</p>
-          {(profile.website || socialLinks.length > 0) && (
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm underline underline-offset-4">
-              {profile.website && (
-                <a
-                  className="inline-flex items-center gap-1"
-                  href={profile.website}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  <ExternalLink className="size-3.5" />
-                  Website
-                </a>
-              )}
-              {socialLinks.map(([network, handle]) => (
-                <span key={network}>
-                  {network}: {handle}
-                </span>
-              ))}
-            </div>
-          )}
+          <ProfileLinks
+            website={profile.website}
+            instagram={profile.socials?.instagram}
+            tiktok={profile.socials?.tiktok}
+            x={profile.socials?.x}
+          />
           {profile.stats && (
             <dl className="mt-6 grid grid-cols-5 gap-2 border-y border-border py-4 text-center">
               {Object.entries(profile.stats).map(([key, value]) => (
