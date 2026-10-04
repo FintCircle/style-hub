@@ -1,5 +1,5 @@
 import { ProfileLink } from "@/components/lebeho/ProfileLink";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Heart, Play, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
@@ -26,11 +26,37 @@ export const Route = createFileRoute("/reels")({
   component: Reels,
 });
 
-function ReelSlide({ reel }: { reel: Reel }) {
+function ReelSlide({
+  reel,
+  active,
+  registerSection,
+}: {
+  reel: Reel;
+  active: boolean;
+  registerSection: (element: HTMLElement | null, id: string) => void;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [liked, setLiked] = useState(Boolean(reel.likedByViewer));
   const [muted, setMuted] = useState(true);
   const requireAccount = useRequireAccount();
   const baseLikes = reel.likes - (reel.likedByViewer ? 1 : 0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (active) {
+      video.muted = muted;
+      void video.play().catch(() => undefined);
+      return;
+    }
+    video.pause();
+    video.muted = true;
+    video.currentTime = 0;
+  }, [active]);
+
+  useEffect(() => {
+    if (videoRef.current && active) videoRef.current.muted = muted;
+  }, [active, muted]);
 
   async function toggleLike() {
     if (!requireAccount()) return;
@@ -46,9 +72,14 @@ function ReelSlide({ reel }: { reel: Reel }) {
   }
 
   return (
-    <section className="relative h-[100svh] snap-start snap-always overflow-hidden">
+    <section
+      ref={(element) => registerSection(element, reel.id)}
+      data-reel-id={reel.id}
+      className="relative h-[calc(100svh-76px)] snap-start snap-always overflow-hidden"
+    >
       {reel.video ? (
         <video
+          ref={videoRef}
           src={reel.video}
           poster={reel.poster || undefined}
           className="absolute inset-0 size-full object-cover"
@@ -127,13 +158,47 @@ function formatLikes(n: number) {
 
 function Reels() {
   const { reels } = useReels();
+  const [activeId, setActiveId] = useState<string | null>(reels[0]?.id ?? null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sections = useRef(new Map<string, HTMLElement>());
+  const registerSection = (element: HTMLElement | null, id: string) => {
+    if (element) sections.current.set(id, element);
+    else sections.current.delete(id);
+  };
+
+  useEffect(() => {
+    setActiveId(reels[0]?.id ?? null);
+  }, [reels]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+        if (visible) setActiveId(visible.target.getAttribute("data-reel-id"));
+      },
+      { root: containerRef.current, threshold: [0.6, 0.8, 0.95], rootMargin: "0px" },
+    );
+    sections.current.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [reels]);
+
   return (
-    <div className="h-[100svh] snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-reels">
+    <div
+      ref={containerRef}
+      className="h-[calc(100svh-76px)] snap-y snap-mandatory overflow-y-auto overscroll-y-contain bg-reels"
+    >
       <h1 className="pointer-events-none fixed inset-x-0 top-0 z-40 p-6 text-center text-sm font-semibold uppercase tracking-[0.3em] text-reels-foreground mix-blend-difference">
         Reels
       </h1>
       {reels.map((r) => (
-        <ReelSlide key={r.id} reel={r} />
+        <ReelSlide
+          key={r.id}
+          reel={r}
+          active={activeId === r.id}
+          registerSection={registerSection}
+        />
       ))}
       <BottomNav tone="dark" />
     </div>
