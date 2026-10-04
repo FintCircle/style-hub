@@ -1,10 +1,10 @@
 import { ChangeEvent, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AccountGate } from "@/components/lebeho/AccountGate";
 import { useViewer } from "@/hooks/use-viewer";
 import { uploadMedia } from "@/lib/account";
-import { updateProfile } from "@/lib/lebeho.functions";
+import { listMyReels, updateProfile } from "@/lib/lebeho.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Camera, ExternalLink, Pencil, Plus } from "lucide-react";
 import { posts, reels, me } from "@/lib/lebeho-data";
@@ -86,6 +86,11 @@ function Profile() {
   const [saving, setSaving] = useState(false);
   const viewer = useViewer();
   const queryClient = useQueryClient();
+  const myReelsQuery = useQuery({
+    queryKey: ["my-reels"],
+    queryFn: () => listMyReels(),
+    enabled: Boolean(viewer.isSignedIn && viewer.profile),
+  });
   const live = viewer.live && viewer.profile;
   const handle = viewer.profile?.handle ?? me.handle;
   const mine = live ? [] : posts.slice(0, 2);
@@ -339,15 +344,26 @@ function Profile() {
         )}
         {tab === "Reels" && (
           <div className="grid grid-cols-3 gap-1 px-1 py-8">
-            {reels.map((reel) => (
-              <img
-                key={reel.id}
-                src={reel.poster}
-                alt={reel.caption}
-                loading="lazy"
-                className="aspect-[9/16] w-full object-cover"
-              />
-            ))}
+            {live && myReelsQuery.data
+              ? myReelsQuery.data.map((reel) => (
+                  <div key={reel.id} className="relative aspect-[9/16] overflow-hidden rounded-sm bg-muted">
+                    <video src={reel.video} muted playsInline className="size-full object-cover" />
+                    {reel.status !== "approved" && (
+                      <span className="absolute inset-x-1 bottom-1 rounded-full bg-background/90 px-2 py-1 text-center text-[9px] uppercase tracking-wider">
+                        {reel.status === "rejected" ? "Removed" : "Pending review"}
+                      </span>
+                    )}
+                  </div>
+                ))
+              : reels.map((reel) => (
+                  <img
+                    key={reel.id}
+                    src={reel.poster}
+                    alt={reel.caption}
+                    loading="lazy"
+                    className="aspect-[9/16] w-full object-cover"
+                  />
+                ))}
           </div>
         )}
       </div>

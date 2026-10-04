@@ -148,7 +148,7 @@ function Create() {
         const video = await uploadMedia(reel.file, "video", durationMs);
         await createReel({ data: { videoMediaId: video.id, caption: text, durationMs: Math.max(1, Math.round(durationMs)) } });
         queryClient.invalidateQueries({ queryKey: ["reels"] });
-        toast.success("Your reel is live.");
+        toast.success("Your reel was sent to LeBeHo for review.");
         navigate({ to: "/reels" });
         return;
       }
@@ -412,6 +412,9 @@ function Create() {
           </div>
         ) : (
           <div className="mt-7">
+            <div className="mb-6 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
+              Every reel is reviewed by LeBeHo before it appears to other users. You&apos;ll see a pending badge on your profile while LeBeHo reviews it.
+            </div>
             <input
               ref={reelInputRef}
               type="file"
