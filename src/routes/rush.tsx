@@ -1,4 +1,3 @@
-import { ProfileLink } from "@/components/lebeho/ProfileLink";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useFeed } from "@/hooks/use-feed";
 import { VoteBlock } from "@/components/lebeho/VoteBlock";
@@ -37,11 +36,9 @@ function RushCard({ post }: { post: Post }) {
           endsAt={post.rushEndsAt!}
           className="text-4xl font-bold leading-none tracking-tight"
         />
-        <ProfileLink
-          name={post.handle}
-          handle={post.handle}
-          className="font-rush text-[10px] uppercase tracking-[0.2em] opacity-80 underline-offset-4 hover:underline hover:opacity-100"
-        />
+        <span className="font-rush text-[10px] uppercase tracking-[0.2em] opacity-80">
+          {post.handle}
+        </span>
       </div>
 
       <p className="mt-4 font-rush text-sm uppercase tracking-[0.22em]">Help me pick ↓</p>

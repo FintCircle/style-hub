@@ -24,9 +24,9 @@ export const Route = createFileRoute("/api/public/media/upload")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const { getCfEnv, mediaUrl } = await import("@/lib/cf-env.server");
-        const { viewerFrom } = await import("@/lib/auth.server");
-        const env = getCfEnv(request);
+        const { cfEnv, mediaUrl } = await import("@/lib/cf-env.server");
+        const { viewerFrom, isAdminProfile } = await import("@/lib/auth.server");
+        const env = await cfEnv(request);
         if (!env.DB || !env.MEDIA) {
           console.error("Missing Worker bindings", { DB: Boolean(env.DB), MEDIA: Boolean(env.MEDIA) });
           return json(
@@ -37,6 +37,8 @@ export const Route = createFileRoute("/api/public/media/upload")({
 
         const viewer = await viewerFrom(request);
         if (!viewer) return json({ error: "Please sign in to upload." }, 401);
+        if (viewer.profile.is_restricted && !isAdminProfile(viewer.profile))
+          return json({ error: "Your account is restricted from uploading." }, 403);
 
         const kind = new URL(request.url).searchParams.get("kind") as keyof typeof LIMITS | null;
         if (!kind || !(kind in LIMITS)) return json({ error: "Unknown upload type." }, 400);

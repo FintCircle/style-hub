@@ -16,8 +16,6 @@ export type Reply = {
 /** A public one-to-one conversation between the poster and a Thought author. */
 export type Thought = {
   id: string;
-  /** D1 profile id of the Thought author (live posts only), used for blocking. */
-  authorId?: string;
   author: string;
   handle: string;
   text: string;
@@ -269,14 +267,6 @@ export const me = {
     "I am drawn to the precise parts of getting dressed: a good shoulder, a long trouser break, and the right amount of chaos. I share outfits, styling notes, and the occasional wardrobe experiment from a tailoring-first point of view.",
   avatar: post3,
   stats: { posts: 24, thoughts: 118, reels: 6, likes: 1240, boosts: 86 },
-};
-
-export type ProfileThought = {
-  id: string;
-  text: string;
-  time: string;
-  postId: string;
-  postAuthor: string;
 };
 
 export type Profile = {

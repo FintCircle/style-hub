@@ -1,18 +1,15 @@
 import { ChangeEvent, useEffect, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AccountGate } from "@/components/lebeho/AccountGate";
 import { useViewer } from "@/hooks/use-viewer";
-import { useTheme, themeLabel, type ThemePreference } from "@/components/lebeho/ThemeProvider";
 import { uploadMedia } from "@/lib/account";
-import { getPublicProfile, updateProfile } from "@/lib/lebeho.functions";
+import { updateProfile } from "@/lib/lebeho.functions";
 import { createFileRoute } from "@tanstack/react-router";
-import { Camera, Pencil, Plus } from "lucide-react";
+import { Camera, ExternalLink, Pencil, Plus } from "lucide-react";
 import { posts, reels, me } from "@/lib/lebeho-data";
-import { ProfileActivity, ProfileStats } from "@/components/lebeho/ProfileActivity";
-import { AboutContent, AboutEditor } from "@/components/lebeho/AboutContent";
+import { PostCard } from "@/components/lebeho/PostCard";
 import { BottomNav } from "@/components/lebeho/BottomNav";
-import { ProfileLinks } from "@/components/lebeho/ProfileLinks";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -55,18 +52,7 @@ function ProfilePage() {
   );
 }
 
-const sampleThoughts = posts
-  .flatMap((post) =>
-    post.thoughts.map((thought) => ({
-      id: thought.id,
-      text: thought.text,
-      time: thought.time,
-      postId: post.id,
-      postAuthor: post.author,
-    })),
-  )
-  .slice(0, 3);
-
+const tabs = ["Posts", "Thoughts", "Reels", "About"] as const;
 type ProfileDetails = {
   name: string;
   bio: string;
@@ -90,6 +76,7 @@ const initialProfile: ProfileDetails = {
 };
 
 function Profile() {
+  const [tab, setTab] = useState<(typeof tabs)[number]>("Posts");
   const [profile, setProfile] = useState(initialProfile);
   const [draft, setDraft] = useState(initialProfile);
   const [aboutDraft, setAboutDraft] = useState(initialProfile.about);
@@ -98,15 +85,10 @@ function Profile() {
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const viewer = useViewer();
-  const { preference, resolvedTheme, setPreference } = useTheme();
   const queryClient = useQueryClient();
   const live = viewer.live && viewer.profile;
   const handle = viewer.profile?.handle ?? me.handle;
-  const activity = useQuery({
-    queryKey: ["profile", handle],
-    queryFn: () => getPublicProfile({ data: { handle } }),
-    enabled: Boolean(live),
-  });
+  const mine = live ? [] : posts.slice(0, 2);
 
   useEffect(() => {
     if (!viewer.profile) return;
@@ -123,7 +105,6 @@ function Profile() {
     const saved = await updateProfile({ data: { ...fields, ...(avatarMediaId ? { avatarMediaId } : {}) } });
     setAvatarFile(null);
     queryClient.invalidateQueries({ queryKey: ["viewer"] });
-    queryClient.invalidateQueries({ queryKey: ["profile"] });
     const { id: _id, handle: _h, ...details } = saved;
     return details;
   }
@@ -169,6 +150,12 @@ function Profile() {
       setSaving(false);
     }
   };
+
+  const socialLinks = [
+    ["Instagram", profile.instagram],
+    ["TikTok", profile.tiktok],
+    ["X", profile.x],
+  ].filter(([, value]) => value);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -277,80 +264,118 @@ function Profile() {
             Tell people a little about your style.
           </p>
         )}
-        <ProfileLinks
-          website={profile.website}
-          instagram={profile.instagram}
-          tiktok={profile.tiktok}
-          x={profile.x}
-        />
-
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
-          <div>
-            <p className="text-sm font-medium">Appearance</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {preference === "system"
-                ? `Following your device · ${resolvedTheme === "dark" ? "Dark" : "Light"}`
-                : `${themeLabel(preference)} mode`}
-            </p>
-          </div>
-          <div className="flex rounded-lg border border-border p-1" role="group" aria-label="Choose appearance">
-            {(["system", "light", "dark"] as ThemePreference[]).map((option) => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={preference === option}
-                onClick={() => setPreference(option)}
-                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${preference === option ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"}`}
+        {(profile.website || socialLinks.length > 0) && (
+          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-sm underline underline-offset-4">
+            {profile.website && (
+              <a
+                className="inline-flex items-center gap-1"
+                href={profile.website}
+                target="_blank"
+                rel="noreferrer"
               >
-                {themeLabel(option)}
-              </button>
+                <ExternalLink className="size-3.5" />
+                {profile.website}
+              </a>
+            )}
+            {socialLinks.map(([network, handle]) => (
+              <span key={network}>
+                {network}: {handle}
+              </span>
             ))}
           </div>
-        </div>
+        )}
 
-        <ProfileStats stats={live ? activity.data?.profile?.stats : me.stats} />
+        <dl className="mt-6 grid grid-cols-5 gap-2 border-y border-border py-4 text-center">
+          {Object.entries(me.stats).map(([key, value]) => (
+            <div key={key}>
+              <dt className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+                {key}
+              </dt>
+              <dd className="font-editorial text-lg">{value.toLocaleString()}</dd>
+            </div>
+          ))}
+        </dl>
+
+        <div className="mt-6 flex gap-5">
+          {tabs.map((item) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => {
+                if (item === "About") {
+                  setAboutDraft(profile.about);
+                  setAboutOpen(true);
+                } else setTab(item);
+              }}
+              className={
+                "pb-2 text-[11px] uppercase tracking-[0.22em] transition-colors " +
+                (tab === item
+                  ? "border-b border-foreground text-foreground"
+                  : "text-muted-foreground")
+              }
+            >
+              {item}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <ProfileActivity
-        loading={Boolean(live) && activity.isLoading}
-        posts={live ? (activity.data?.posts ?? []) : posts.slice(0, 2)}
-        thoughts={live ? (activity.data?.thoughts ?? []) : sampleThoughts}
-        reels={live ? (activity.data?.reels ?? []) : reels}
-        onAbout={() => {
-          setAboutDraft(profile.about);
-          setAboutOpen(true);
-        }}
-      />
+      <div className="mx-auto max-w-xl">
+        {tab === "Posts" && mine.map((post) => <PostCard key={post.id} post={post} />)}
+        {tab === "Thoughts" && (
+          <div className="space-y-6 px-5 py-8">
+            {posts
+              .flatMap((post) => post.thoughts.map((thought) => ({ thought, post })))
+              .slice(0, 3)
+              .map(({ thought, post }) => (
+                <div key={thought.id} className="border-b border-border pb-5">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    On {post.author}'s post
+                  </p>
+                  <p className="mt-2 text-[15px] leading-relaxed">{thought.text}</p>
+                </div>
+              ))}
+          </div>
+        )}
+        {tab === "Reels" && (
+          <div className="grid grid-cols-3 gap-1 px-1 py-8">
+            {reels.map((reel) => (
+              <img
+                key={reel.id}
+                src={reel.poster}
+                alt={reel.caption}
+                loading="lazy"
+                className="aspect-[9/16] w-full object-cover"
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
       <Sheet open={aboutOpen} onOpenChange={setAboutOpen}>
-        <SheetContent
-          side="bottom"
-          className="mx-auto flex max-h-[90dvh] max-w-xl flex-col gap-0 rounded-t-2xl p-0"
-        >
-          <SheetHeader className="shrink-0 border-b border-border px-5 pb-4 pt-6 pr-12 text-left sm:px-6">
-            <SheetTitle className="text-balance font-editorial text-2xl leading-tight">
-              About {profile.name}
-            </SheetTitle>
-            <SheetDescription className="text-pretty">
+        <SheetContent side="bottom" className="mx-auto max-w-xl rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle className="font-editorial text-2xl">About {profile.name}</SheetTitle>
+            <SheetDescription>
               Your story, your point of view, and what you are about.
             </SheetDescription>
           </SheetHeader>
-          <div className="flex-1 space-y-6 overflow-y-auto overscroll-contain px-5 py-5 sm:px-6">
-            <AboutEditor value={aboutDraft} onChange={setAboutDraft} maxLength={1200} />
-            {aboutDraft.trim() ? (
-              <section aria-label="Preview" className="space-y-3">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Preview</p>
-                <AboutContent text={aboutDraft} />
-              </section>
-            ) : (
-              !profile.about && (
-                <p className="text-sm text-muted-foreground">
-                  No about yet — add a few words to help your people get to know you.
-                </p>
-              )
+          <div className="py-6">
+            <Textarea
+              aria-label="About"
+              className="min-h-48"
+              maxLength={1200}
+              placeholder="Share your story, your style, and what people should know about you..."
+              value={aboutDraft}
+              onChange={(e) => setAboutDraft(e.target.value)}
+            />
+            {!profile.about && !aboutDraft && (
+              <p className="mt-3 text-sm text-muted-foreground">
+                No about yet — add a few words to help your people get to know you.
+              </p>
             )}
           </div>
-          <SheetFooter className="shrink-0 flex-row justify-end gap-2 border-t border-border px-5 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 sm:px-6">
+          <SheetFooter>
             <SheetClose asChild>
               <Button variant="ghost">Cancel</Button>
             </SheetClose>

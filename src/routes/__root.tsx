@@ -13,7 +13,6 @@ import { useEffect, type ReactNode } from "react";
 import { ClerkProvider } from "@clerk/clerk-react";
 import { CLERK_PUBLISHABLE_KEY, ACCOUNTS_URL } from "../lib/account";
 import { Toaster } from "../components/ui/sonner";
-import { ThemeProvider } from "../components/lebeho/ThemeProvider";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -83,28 +82,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "LeBeHo" },
-      {
-        name: "description",
-        content:
-          "LeBeHo is a fashion social community for honest style advice, outfit conversations, Rush Hour decisions, and short fashion Reels.",
-      },
-      { name: "theme-color", content: "#f5f1e9" },
-      { name: "robots", content: "index, follow, max-image-preview:large" },
-      { name: "keywords", content: "fashion community, style advice, outfit advice, fashion social network, fashion reels" },
-      { property: "og:site_name", content: "LeBeHo" },
-      { property: "og:title", content: "LeBeHo — Let’s Be Honest About Fashion" },
-      {
-        property: "og:description",
-        content: "Honest fashion advice, outfit conversations, and style discovery in one community.",
-      },
+      { name: "description", content: "A fashion-exclusive social platform." },
+      { property: "og:title", content: "LeBeHo" },
+      { property: "og:description", content: "A fashion-exclusive social platform." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "/" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "LeBeHo — Let’s Be Honest About Fashion" },
-      {
-        name: "twitter:description",
-        content: "Honest fashion advice, outfit conversations, and style discovery.",
-      },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {
@@ -117,8 +99,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..700;1,400&family=Jost:wght@300;400;500;600&family=Oswald:wght@400;600;700&display=swap",
       },
-      { rel: "icon", href: "/favicon.png", type: "image/png", sizes: "512x512" },
-      { rel: "apple-touch-icon", href: "/favicon.png" },
+      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
   }),
   shellComponent: RootShell,
@@ -152,11 +133,9 @@ function RootComponent() {
       afterSignOutUrl="/"
     >
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
-          <Toaster />
-        </ThemeProvider>
+        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+        <Outlet />
+        <Toaster />
       </QueryClientProvider>
     </ClerkProvider>
   );
