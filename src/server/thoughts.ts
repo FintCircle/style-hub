@@ -210,7 +210,9 @@ export async function reportThought(
   details?: string,
 ) {
   const actor = await profileForClerkUser(db, clerkUserId);
-  await participantForThought(db, thoughtId);
+  const participants = await participantForThought(db, thoughtId);
+  if (actor.id !== participants.post_author_id)
+    throw new Error("Only the post author may report Thoughts on this post");
   const existing = await db
     .prepare(
       "SELECT 1 FROM thought_reports WHERE thought_id = ? AND reporter_id = ? AND status = 'pending'",
@@ -224,6 +226,14 @@ export async function reportThought(
     )
     .bind(id(), thoughtId, actor.id, reason, details?.trim() || null)
     .run();
+}
+
+export async function blockThoughtAuthor(db: D1Database, clerkUserId: string, thoughtId: string) {
+  const actor = await profileForClerkUser(db, clerkUserId);
+  const participants = await participantForThought(db, thoughtId);
+  if (actor.id !== participants.post_author_id)
+    throw new Error("Only the post author may block people from their Thoughts");
+  await setUserBlocked(db, clerkUserId, participants.thought_author_id, true);
 }
 
 export async function setUserBlocked(
