@@ -22,7 +22,10 @@ async function purgeMedia(mediaIds: string[]) {
 
 export const getAdminOverview = createServerFn({ method: "POST" }).handler(async () => {
   const { db } = await admin();
-  const [users, posts, pendingReels, reports] = await Promise.all([
+  const [userCount, users, posts, pendingReels, reports] = await Promise.all([
+    db
+      .prepare("SELECT COUNT(*) AS count FROM profiles WHERE deleted_at IS NULL")
+      .first<{ count: number }>(),
     db
       .prepare(
         `SELECT id, username, display_name, email, created_at, is_restricted FROM profiles
@@ -53,7 +56,7 @@ export const getAdminOverview = createServerFn({ method: "POST" }).handler(async
   ]);
   const { mediaUrl } = await import("./cf-env.server");
   return {
-    userCount: users.results.length,
+    userCount: Number(userCount?.count ?? 0),
     users: users.results.map((u) => ({ ...u, restricted: Boolean(u.is_restricted) })),
     posts: posts.results.map((p) => ({ ...p, images: Number(p.images) })),
     pendingReels: pendingReels.results.map((r) => ({ ...r, video: mediaUrl(r.r2_key)! })),
