@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useClerk } from "@clerk/clerk-react";
 import { PortalLink } from "./PortalLink";
 import { useViewer } from "@/hooks/use-viewer";
-import { Menu, Timer } from "lucide-react";
+import { Menu, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -61,6 +61,17 @@ export function FeedHeader() {
                   </Link>
                 </SheetClose>
               ))}
+              {profile?.isAdmin && (
+                <SheetClose asChild>
+                  <Link
+                    to="/admin"
+                    className="flex items-center justify-between border-b border-border py-5 text-left transition-colors hover:text-rush"
+                  >
+                    <span className="flex items-center gap-2 font-editorial text-2xl"><ShieldCheck className="size-5" />Admin area</span>
+                    <span className="text-[10px] text-muted-foreground">Moderate</span>
+                  </Link>
+                </SheetClose>
+              )}
               {isSignedIn ? (
                 <button
                   type="button"
