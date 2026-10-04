@@ -1,5 +1,7 @@
 import { createClerkClient, verifyToken } from "@clerk/backend";
-import { getClerkSecret, getDb, mediaUrl, type D1Database } from "./cf-env.server";
+import { db as loadDb, getClerkSecret, loadWorkersEnv, mediaUrl, type D1Database } from "./cf-env.server";
+
+export const ADMIN_EMAIL = "mderrickm00@gmail.com";
 
 export type ProfileRow = {
   id: string;
@@ -13,12 +15,16 @@ export type ProfileRow = {
   tiktok: string | null;
   x_handle: string | null;
   profile_image_url: string | null;
+  email: string | null;
+  is_restricted: number | null;
+  created_at: string;
 };
 
 /** Verifies the Clerk session token sent as `Authorization: Bearer <token>`. */
 export async function clerkUserIdFrom(request: Request): Promise<string | null> {
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  await loadWorkersEnv();
   const secretKey = getClerkSecret();
   if (!token || !secretKey) return null;
   try {
@@ -78,7 +84,7 @@ export async function ensureProfile(db: D1Database, clerkUserId: string): Promis
 
 /** Signed-in viewer for a request, or null (signed out / outside Cloudflare). */
 export async function viewerFrom(request: Request) {
-  const db = getDb(request);
+  const db = await loadDb(request);
   if (!db) return null;
   const clerkUserId = await clerkUserIdFrom(request);
   if (!clerkUserId) return null;
@@ -86,9 +92,33 @@ export async function viewerFrom(request: Request) {
 }
 
 export async function requireViewer(request: Request) {
-  if (!getDb(request)) throw new Error("Server is missing the DB binding.");
+  if (!(await loadDb(request))) throw new Error("Server is missing the DB binding.");
   const viewer = await viewerFrom(request);
   if (!viewer) throw new Error("Please sign in to continue.");
+  return viewer;
+}
+
+export function isAdminProfile(row: ProfileRow) {
+  return (row.email ?? "").trim().toLowerCase() === ADMIN_EMAIL;
+}
+
+/** Signed-in viewer who is allowed to upload / create content. */
+export async function requireCreator(request: Request) {
+  const viewer = await requireViewer(request);
+  if (viewer.profile.is_restricted && !isAdminProfile(viewer.profile))
+    throw new Error("Your account is restricted from uploading or creating content.");
+  return viewer;
+}
+
+/** Admin only — re-checks the verified primary email with Clerk. */
+export async function requireAdmin(request: Request) {
+  const viewer = await requireViewer(request);
+  const clerk = createClerkClient({ secretKey: getClerkSecret()! });
+  const user = await clerk.users.getUser(viewer.profile.clerk_user_id);
+  const primary = user.primaryEmailAddress;
+  const ok =
+    primary?.emailAddress.toLowerCase() === ADMIN_EMAIL && primary.verification?.status === "verified";
+  if (!ok) throw new Error("Admins only.");
   return viewer;
 }
 
@@ -104,5 +134,7 @@ export function toPublicProfile(row: ProfileRow) {
     tiktok: row.tiktok ?? "",
     x: row.x_handle ?? "",
     avatar: mediaUrl(row.profile_image_url) ?? "",
+    isAdmin: isAdminProfile(row),
+    restricted: Boolean(row.is_restricted),
   };
 }

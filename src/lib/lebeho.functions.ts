@@ -32,8 +32,8 @@ type PostRow = {
 /** Current viewer's D1 profile; creates it on first sign-in. */
 export const getViewer = createServerFn({ method: "POST" }).handler(async () => {
   const { viewerFrom, toPublicProfile } = await import("./auth.server");
-  const { getDb } = await import("./cf-env.server");
-  if (!getDb(getRequest())) return { live: false as const, profile: null };
+  const { db: loadDb } = await import("./cf-env.server");
+  if (!(await loadDb(getRequest()))) return { live: false as const, profile: null };
   const viewer = await viewerFrom(getRequest());
   return { live: true as const, profile: viewer ? toPublicProfile(viewer.profile) : null };
 });
@@ -46,9 +46,9 @@ export const listFeed = createServerFn({ method: "POST" })
       .parse(input ?? {}),
   )
   .handler(async ({ data }): Promise<{ live: boolean; posts: Post[] }> => {
-    const { getDb, mediaUrl } = await import("./cf-env.server");
+    const { db: loadDb, mediaUrl } = await import("./cf-env.server");
     const { viewerFrom } = await import("./auth.server");
-    const db = getDb(getRequest());
+    const db = await loadDb(getRequest());
     if (!db) return { live: false, posts: [] };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
 
@@ -132,8 +132,8 @@ const createPostSchema = z.object({
 export const createPost = createServerFn({ method: "POST" })
   .inputValidator((input: z.input<typeof createPostSchema>) => createPostSchema.parse(input))
   .handler(async ({ data }) => {
-    const { requireViewer } = await import("./auth.server");
-    const { db, profile } = await requireViewer(getRequest());
+    const { requireCreator } = await import("./auth.server");
+    const { db, profile } = await requireCreator(getRequest());
     if (!data.text && !data.mediaIds.length) throw new Error("Write something or add a photo.");
 
     if (data.mediaIds.length) {
@@ -260,8 +260,8 @@ export const createReel = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const { requireViewer } = await import("./auth.server");
-    const { db, profile } = await requireViewer(getRequest());
+    const { requireCreator } = await import("./auth.server");
+    const { db, profile } = await requireCreator(getRequest());
     const media = await db
       .prepare("SELECT 1 FROM media WHERE id = ? AND owner_id = ? AND kind = 'video' AND status = 'ready'")
       .bind(data.videoMediaId, profile.id)
@@ -269,7 +269,7 @@ export const createReel = createServerFn({ method: "POST" })
     if (!media) throw new Error("Reel video not found.");
     const id = crypto.randomUUID();
     await db
-      .prepare("INSERT INTO reels (id, author_id, video_media_id, caption, duration_ms) VALUES (?, ?, ?, ?, ?)")
+      .prepare("INSERT INTO reels (id, author_id, video_media_id, caption, duration_ms, status) VALUES (?, ?, ?, ?, ?, 'pending')")
       .bind(id, profile.id, data.videoMediaId, data.caption, data.durationMs)
       .run();
     return { id };
@@ -277,9 +277,9 @@ export const createReel = createServerFn({ method: "POST" })
 
 export const listReels = createServerFn({ method: "POST" }).handler(
   async (): Promise<{ live: boolean; reels: Reel[] }> => {
-    const { getDb, mediaUrl } = await import("./cf-env.server");
+    const { db: loadDb, mediaUrl } = await import("./cf-env.server");
     const { viewerFrom } = await import("./auth.server");
-    const db = getDb(getRequest());
+    const db = await loadDb(getRequest());
     if (!db) return { live: false, reels: [] };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
     const { results } = await db
@@ -290,7 +290,7 @@ export const listReels = createServerFn({ method: "POST" }).handler(
           (SELECT COUNT(*) FROM reel_likes l WHERE l.reel_id = r.id AND l.user_id = ?) AS mine
         FROM reels r JOIN profiles pr ON pr.id = r.author_id JOIN media v ON v.id = r.video_media_id
         LEFT JOIN media pm ON pm.id = r.poster_media_id
-        WHERE r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 40`,
+        WHERE r.deleted_at IS NULL AND r.status = 'approved' ORDER BY r.created_at DESC LIMIT 40`,
       )
       .bind(viewer?.profile.id ?? "")
       .all<{
@@ -338,6 +338,41 @@ export const setReelLiked = createServerFn({ method: "POST" })
           : "DELETE FROM reel_likes WHERE reel_id = ? AND user_id = ?",
       )
       .bind(data.reelId, profile.id)
+      .run();
+    return { ok: true };
+  });
+
+/** The viewer's own reels, including ones waiting for review. */
+export const listMyReels = createServerFn({ method: "POST" }).handler(async () => {
+  const { requireViewer } = await import("./auth.server");
+  const { mediaUrl } = await import("./cf-env.server");
+  const { db, profile } = await requireViewer(getRequest());
+  const { results } = await db
+    .prepare(
+      `SELECT r.id, r.caption, r.status, v.r2_key AS video_key FROM reels r JOIN media v ON v.id = r.video_media_id
+       WHERE r.author_id = ? AND r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 60`,
+    )
+    .bind(profile.id)
+    .all<{ id: string; caption: string; status: string; video_key: string }>();
+  return results.map((r) => ({ id: r.id, caption: r.caption, status: r.status, video: mediaUrl(r.video_key)! }));
+});
+
+export const reportContent = createServerFn({ method: "POST" })
+  .inputValidator((input: { targetType: "post" | "reel" | "profile"; targetId: string; reason: string }) =>
+    z
+      .object({
+        targetType: z.enum(["post", "reel", "profile"]),
+        targetId: z.string().min(1).max(64),
+        reason: z.string().trim().max(500),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { requireViewer } = await import("./auth.server");
+    const { db, profile } = await requireViewer(getRequest());
+    await db
+      .prepare("INSERT INTO content_reports (id, reporter_id, target_type, target_id, reason) VALUES (?, ?, ?, ?, ?)")
+      .bind(crypto.randomUUID(), profile.id, data.targetType, data.targetId, data.reason)
       .run();
     return { ok: true };
   });
