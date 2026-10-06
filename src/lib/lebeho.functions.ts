@@ -26,6 +26,8 @@ type PostRow = {
   thoughts_closed: number;
   display_name: string;
   username: string;
+  profile_image_url: string | null;
+  profile_border_color: string | null;
   thought_count: number;
 };
 
@@ -60,7 +62,7 @@ export const listFeed = createServerFn({ method: "POST" })
     const { results: rows } = await db
       .prepare(
         `SELECT p.id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour, p.hashtag_slug,
-          p.thoughts_closed, pr.display_name, pr.username,
+          p.thoughts_closed, pr.display_name, pr.username, pr.profile_image_url, pr.profile_border_color,
           (SELECT COUNT(*) FROM thoughts t WHERE t.post_id = p.id AND t.deleted_at IS NULL AND t.is_hidden = 0) AS thought_count
         FROM posts p JOIN profiles pr ON pr.id = p.author_id
         WHERE ${where.join(" AND ")} ORDER BY p.created_at DESC LIMIT 60`,
@@ -102,6 +104,8 @@ export const listFeed = createServerFn({ method: "POST" })
         id: r.id,
         author: r.display_name,
         handle: `@${r.username}`,
+        avatarUrl: mediaUrl(r.profile_image_url) ?? undefined,
+        avatarBorderColor: r.profile_border_color ?? undefined,
         time: relativeTime(r.created_at),
         text: r.body,
         images: images.results.filter((i) => i.post_id === r.id).map((i) => mediaUrl(i.r2_key)!),

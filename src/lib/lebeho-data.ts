@@ -31,6 +31,8 @@ export type Post = {
   id: string;
   author: string;
   handle: string;
+  avatarUrl?: string;
+  avatarBorderColor?: string;
   time: string;
   text: string;
   images: string[];
