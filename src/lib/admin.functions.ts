@@ -1,10 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 const uuidish = z.string().min(1).max(64);
 
 async function admin() {
+  const { getRequest } = await import("@tanstack/react-start/server");
   const { requireAdmin } = await import("./auth.server");
   return requireAdmin(getRequest());
 }
@@ -161,7 +161,7 @@ export const getAdminOverview = createServerFn({ method: "POST" }).handler(async
 
 /** Approve makes a reel public; reject deletes its files from R2 and removes it. */
 export const reviewReel = createServerFn({ method: "POST" })
-  .inputValidator((input: { reelId: string; approve: boolean }) =>
+  .validator((input: { reelId: string; approve: boolean }) =>
     z.object({ reelId: uuidish, approve: z.boolean() }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -181,6 +181,7 @@ export const reviewReel = createServerFn({ method: "POST" })
 type Db = Awaited<ReturnType<typeof admin>>["db"];
 
 async function removeReel(db: Db, reelId: string, now: string) {
+  const { getRequest } = await import("@tanstack/react-start/server");
   const { getCfEnv } = await import("./cf-env.server");
   const media = getCfEnv(getRequest()).MEDIA;
   if (!media) throw new Error("Server is missing the MEDIA binding.");
@@ -203,7 +204,7 @@ async function removeReel(db: Db, reelId: string, now: string) {
 }
 
 export const setUserRestricted = createServerFn({ method: "POST" })
-  .inputValidator((input: { profileId: string; restricted: boolean }) =>
+  .validator((input: { profileId: string; restricted: boolean }) =>
     z.object({ profileId: uuidish, restricted: z.boolean() }).parse(input),
   )
   .handler(async ({ data }) => {
@@ -217,7 +218,7 @@ export const setUserRestricted = createServerFn({ method: "POST" })
   });
 
 export const adminDeletePost = createServerFn({ method: "POST" })
-  .inputValidator((input: { postId: string }) => z.object({ postId: uuidish }).parse(input))
+  .validator((input: { postId: string }) => z.object({ postId: uuidish }).parse(input))
   .handler(async ({ data }) => {
     const { db } = await admin();
     await db
@@ -229,7 +230,7 @@ export const adminDeletePost = createServerFn({ method: "POST" })
 
 /** Report actions: dismiss, remove the reported content, or restrict its author. */
 export const resolveReport = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (input: { reportId: string; source: "content" | "thought"; action: "dismiss" | "remove" | "restrict" }) =>
       z
         .object({
@@ -283,7 +284,7 @@ export const resolveReport = createServerFn({ method: "POST" })
 
 /** Any signed-in member can report a post, reel or profile to LeBeHo. */
 export const reportContent = createServerFn({ method: "POST" })
-  .inputValidator(
+  .validator(
     (input: { targetType: "post" | "reel" | "profile"; targetId: string; reason: string; details?: string }) =>
       z
         .object({
@@ -295,6 +296,7 @@ export const reportContent = createServerFn({ method: "POST" })
         .parse(input),
   )
   .handler(async ({ data }) => {
+    const { getRequest } = await import("@tanstack/react-start/server");
     const { requireViewer } = await import("./auth.server");
     const { db, profile } = await requireViewer(getRequest());
     const existing = await db

@@ -7,7 +7,7 @@ import { BottomNav } from "@/components/lebeho/BottomNav";
 import { AccountGate } from "@/components/lebeho/AccountGate";
 import { uploadMedia, videoDuration } from "@/lib/account";
 import { createPost, createReel, searchHashtags } from "@/lib/lebeho.functions";
-import { normalizeHashtag } from "@/lib/lebeho-data";
+import { normalizeHashtag } from "@/lib/types";
 
 export const Route = createFileRoute("/create")({
   head: () => ({

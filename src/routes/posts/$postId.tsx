@@ -11,18 +11,16 @@ import { PostImageGallery } from "@/components/lebeho/PostImageGallery";
 import { HashtagLink } from "@/components/lebeho/HashtagLink";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useViewer } from "@/hooks/use-viewer";
-import { getPost, type Post } from "@/lib/lebeho-data";
+import type { Post } from "@/lib/types";
 import { getPostDetail } from "@/lib/lebeho.functions";
 
 export const Route = createFileRoute("/posts/$postId")({
-  // Sample posts render instantly; D1 posts load on the client, where the Clerk token is attached.
-  loader: ({ params }) => ({ sample: getPost(params.postId) ?? null }),
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
-      { title: `${loaderData?.sample?.author ?? "Post"} — LeBeHo` },
+      { title: "Post — LeBeHo" },
       {
         name: "description",
-        content: loaderData?.sample?.text ?? "A fashion conversation on LeBeHo.",
+        content: "A fashion conversation on LeBeHo.",
       },
     ],
   }),
@@ -30,18 +28,11 @@ export const Route = createFileRoute("/posts/$postId")({
 });
 
 function PostPage() {
-  const { sample } = Route.useLoaderData();
   return (
     <div className="min-h-screen bg-background pb-24">
       <main className="mx-auto max-w-xl">
         <BackLink />
-        {sample ? (
-          <PostView post={sample}>
-            <Thoughts post={sample} />
-          </PostView>
-        ) : (
-          <LivePost />
-        )}
+        <LivePost />
       </main>
       <BottomNav />
     </div>

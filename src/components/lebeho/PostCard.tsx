@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { MessageSquareQuote, Timer } from "lucide-react";
-import type { Post } from "@/lib/lebeho-data";
+import type { Post } from "@/lib/types";
 import { VoteBlock } from "./VoteBlock";
 import { Countdown, useCountdown } from "./Countdown";
 import { ProfileLink } from "./ProfileLink";

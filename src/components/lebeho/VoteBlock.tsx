@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import type { VoteChoice } from "@/lib/lebeho-data";
+import type { VoteChoice } from "@/lib/types";
 import { useRequireAccount } from "@/hooks/use-viewer";
 import { castVote } from "@/lib/lebeho.functions";
 

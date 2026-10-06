@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
-import type { Post, Profile, ProfileThought, Reel } from "./lebeho-data";
+import type { Post, Profile, ProfileThought, Reel } from "./types";
 
 function relativeTime(iso: string) {
   const then = new Date(iso.includes("T") ? iso : `${iso.replace(" ", "T")}Z`).getTime();

@@ -8,7 +8,6 @@ import { uploadMedia } from "@/lib/account";
 import { getPublicProfile, updateProfile } from "@/lib/lebeho.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Camera, Pencil, Plus } from "lucide-react";
-import { posts, reels, me } from "@/lib/lebeho-data";
 import { ProfileActivity, ProfileStats } from "@/components/lebeho/ProfileActivity";
 import { AboutContent, AboutEditor } from "@/components/lebeho/AboutContent";
 import { BottomNav } from "@/components/lebeho/BottomNav";
@@ -30,12 +29,12 @@ import { Textarea } from "@/components/ui/textarea";
 export const Route = createFileRoute("/profile/")({
   head: () => ({
     meta: [
-      { title: `${me.name} — LeBeHo profile` },
+      { title: "Profile — LeBeHo" },
       {
         name: "description",
         content: "Your LeBeHo activity: posts, Stylist thoughts, and reels in one place.",
       },
-      { property: "og:title", content: `${me.name} — LeBeHo profile` },
+      { property: "og:title", content: "Profile — LeBeHo" },
       {
         property: "og:description",
         content: "Posts, thoughts and reels from one fashion identity.",
@@ -55,18 +54,6 @@ function ProfilePage() {
   );
 }
 
-const sampleThoughts = posts
-  .flatMap((post) =>
-    post.thoughts.map((thought) => ({
-      id: thought.id,
-      text: thought.text,
-      time: thought.time,
-      postId: post.id,
-      postAuthor: post.author,
-    })),
-  )
-  .slice(0, 3);
-
 type ProfileDetails = {
   name: string;
   bio: string;
@@ -78,34 +65,34 @@ type ProfileDetails = {
   avatar: string;
 };
 
-const initialProfile: ProfileDetails = {
-  name: me.name,
-  bio: me.bio,
-  website: me.website,
-  instagram: me.socials.instagram,
-  tiktok: me.socials.tiktok,
-  x: me.socials.x,
-  about: me.about,
-  avatar: me.avatar,
+const emptyProfile: ProfileDetails = {
+  name: "",
+  bio: "",
+  website: "",
+  instagram: "",
+  tiktok: "",
+  x: "",
+  about: "",
+  avatar: "",
 };
 
 function Profile() {
-  const [profile, setProfile] = useState(initialProfile);
-  const [draft, setDraft] = useState(initialProfile);
-  const [aboutDraft, setAboutDraft] = useState(initialProfile.about);
+  const viewer = useViewer();
+  const [profile, setProfile] = useState<ProfileDetails>(emptyProfile);
+  const [draft, setDraft] = useState<ProfileDetails>(emptyProfile);
+  const [aboutDraft, setAboutDraft] = useState("");
   const [editOpen, setEditOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const viewer = useViewer();
   const { preference, resolvedTheme, setPreference } = useTheme();
   const queryClient = useQueryClient();
   const live = viewer.live && viewer.profile;
-  const handle = viewer.profile?.handle ?? me.handle;
+  const handle = viewer.profile?.handle ?? "";
   const activity = useQuery({
     queryKey: ["profile", handle],
     queryFn: () => getPublicProfile({ data: { handle } }),
-    enabled: Boolean(live),
+    enabled: Boolean(live && handle),
   });
 
   useEffect(() => {
@@ -177,7 +164,7 @@ function Profile() {
           <div className="flex items-center gap-5">
             <Avatar avatar={profile.avatar} name={profile.name} />
             <div>
-              <h1 className="font-editorial text-3xl leading-none">{profile.name}</h1>
+              <h1 className="font-editorial text-3xl leading-none">{profile.name || "Member"}</h1>
               <p className="mt-1.5 text-xs tracking-wide text-muted-foreground">{handle}</p>
             </div>
           </div>
@@ -308,14 +295,14 @@ function Profile() {
           </div>
         </div>
 
-        <ProfileStats stats={live ? activity.data?.profile?.stats : me.stats} />
+        <ProfileStats stats={activity.data?.profile?.stats} />
       </div>
 
       <ProfileActivity
         loading={Boolean(live) && activity.isLoading}
-        posts={live ? (activity.data?.posts ?? []) : posts.slice(0, 2)}
-        thoughts={live ? (activity.data?.thoughts ?? []) : sampleThoughts}
-        reels={live ? (activity.data?.reels ?? []) : reels}
+        posts={activity.data?.posts ?? []}
+        thoughts={activity.data?.thoughts ?? []}
+        reels={activity.data?.reels ?? []}
         onAbout={() => {
           setAboutDraft(profile.about);
           setAboutOpen(true);
@@ -329,7 +316,7 @@ function Profile() {
         >
           <SheetHeader className="shrink-0 border-b border-border px-5 pb-4 pt-6 pr-12 text-left sm:px-6">
             <SheetTitle className="text-balance font-editorial text-2xl leading-tight">
-              About {profile.name}
+              About {profile.name || "Member"}
             </SheetTitle>
             <SheetDescription className="text-pretty">
               Your story, your point of view, and what you are about.

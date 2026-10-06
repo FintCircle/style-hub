@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { PostCard } from "@/components/lebeho/PostCard";
-import type { Post, Profile, ProfileThought, Reel } from "@/lib/lebeho-data";
+import type { Post, Profile, ProfileThought, Reel } from "@/lib/types";
 
 const tabs = ["Posts", "Thoughts", "Reels", "About"] as const;
 

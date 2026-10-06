@@ -4,7 +4,7 @@ import { useFeed } from "@/hooks/use-feed";
 import { VoteBlock } from "@/components/lebeho/VoteBlock";
 import { Countdown, useCountdown } from "@/components/lebeho/Countdown";
 import { BottomNav } from "@/components/lebeho/BottomNav";
-import type { Post } from "@/lib/lebeho-data";
+import type { Post } from "@/lib/types";
 
 export const Route = createFileRoute("/rush")({
   head: () => ({
