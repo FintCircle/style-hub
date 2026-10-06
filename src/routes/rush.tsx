@@ -12,7 +12,8 @@ export const Route = createFileRoute("/rush")({
       { title: "Rush Hour — LeBeHo" },
       {
         name: "description",
-        content: "Live fashion questions on a countdown. Help someone decide before the clock runs out.",
+        content:
+          "Live fashion questions on a countdown. Help someone decide before the clock runs out.",
       },
       { property: "og:title", content: "Rush Hour — LeBeHo" },
       {
@@ -57,7 +58,15 @@ function RushCard({ post }: { post: Post }) {
         />
       )}
 
-      {post.vote && !over && <VoteBlock choices={post.vote} variant="rush" postId={post.id} live={Boolean(post.live)} viewerVote={post.viewerVote} />}
+      {post.vote && !over && (
+        <VoteBlock
+          choices={post.vote}
+          variant="rush"
+          postId={post.id}
+          live={Boolean(post.live)}
+          viewerVote={post.viewerVote}
+        />
+      )}
 
       <p className="mt-4 text-[15px] leading-relaxed">{post.text}</p>
 

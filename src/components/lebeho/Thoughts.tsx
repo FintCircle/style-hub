@@ -1,11 +1,4 @@
-import {
-  ArrowUp,
-  EyeOff,
-  Flag,
-  MessageCircle,
-  MoreHorizontal,
-  UserRoundX,
-} from "lucide-react";
+import { ArrowUp, EyeOff, Flag, MessageCircle, MoreHorizontal, UserRoundX } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,

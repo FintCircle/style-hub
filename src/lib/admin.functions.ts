@@ -18,7 +18,13 @@ export type AdminUser = {
   restricted: boolean;
   posts: number;
 };
-export type AdminPost = { id: string; text: string; handle: string; created: string; images: string[] };
+export type AdminPost = {
+  id: string;
+  text: string;
+  handle: string;
+  created: string;
+  images: string[];
+};
 export type AdminReel = {
   id: string;
   caption: string;
@@ -45,7 +51,9 @@ export const getAdminOverview = createServerFn({ method: "POST" }).handler(async
   const { db } = await admin();
   const { mediaUrl } = await import("./cf-env.server");
   const [count, users, posts, images, reels, contentReports, thoughtReports] = await Promise.all([
-    db.prepare("SELECT COUNT(*) AS n FROM profiles WHERE deleted_at IS NULL").first<{ n: number }>(),
+    db
+      .prepare("SELECT COUNT(*) AS n FROM profiles WHERE deleted_at IS NULL")
+      .first<{ n: number }>(),
     db
       .prepare(
         `SELECT pr.id, pr.display_name, pr.username, pr.email, pr.created_at, pr.is_restricted,
@@ -79,7 +87,14 @@ export const getAdminOverview = createServerFn({ method: "POST" }).handler(async
          FROM reels r JOIN profiles pr ON pr.id = r.author_id LEFT JOIN media v ON v.id = r.video_media_id
          WHERE r.status = 'pending' AND r.deleted_at IS NULL ORDER BY r.created_at ASC`,
       )
-      .all<{ id: string; caption: string; created_at: string; duration_ms: number; username: string; r2_key: string | null }>(),
+      .all<{
+        id: string;
+        caption: string;
+        created_at: string;
+        duration_ms: number;
+        username: string;
+        r2_key: string | null;
+      }>(),
     db
       .prepare(
         `SELECT c.id, c.target_type, c.target_id, c.reason, c.details, c.created_at, pr.username AS reporter,
@@ -169,7 +184,9 @@ export const reviewReel = createServerFn({ method: "POST" })
     const now = new Date().toISOString();
     if (data.approve) {
       await db
-        .prepare("UPDATE reels SET status = 'approved', reviewed_at = ? WHERE id = ? AND deleted_at IS NULL")
+        .prepare(
+          "UPDATE reels SET status = 'approved', reviewed_at = ? WHERE id = ? AND deleted_at IS NULL",
+        )
         .bind(now, data.reelId)
         .run();
       return { ok: true };
@@ -198,7 +215,9 @@ async function removeReel(db: Db, reelId: string, now: string) {
       .prepare("UPDATE reels SET status = 'rejected', reviewed_at = ?, deleted_at = ? WHERE id = ?")
       .bind(now, now, reelId),
     db.prepare("DELETE FROM reel_likes WHERE reel_id = ?").bind(reelId),
-    ...results.map((m) => db.prepare("UPDATE media SET status = 'deleted' WHERE id = ?").bind(m.id)),
+    ...results.map((m) =>
+      db.prepare("UPDATE media SET status = 'deleted' WHERE id = ?").bind(m.id),
+    ),
   ];
   await db.batch(statements);
 }
@@ -212,7 +231,11 @@ export const setUserRestricted = createServerFn({ method: "POST" })
     if (data.profileId === profile.id) throw new Error("You can't restrict your own account.");
     await db
       .prepare("UPDATE profiles SET is_restricted = ?, restricted_at = ? WHERE id = ?")
-      .bind(data.restricted ? 1 : 0, data.restricted ? new Date().toISOString() : null, data.profileId)
+      .bind(
+        data.restricted ? 1 : 0,
+        data.restricted ? new Date().toISOString() : null,
+        data.profileId,
+      )
       .run();
     return { ok: true };
   });
@@ -231,7 +254,11 @@ export const adminDeletePost = createServerFn({ method: "POST" })
 /** Report actions: dismiss, remove the reported content, or restrict its author. */
 export const resolveReport = createServerFn({ method: "POST" })
   .validator(
-    (input: { reportId: string; source: "content" | "thought"; action: "dismiss" | "remove" | "restrict" }) =>
+    (input: {
+      reportId: string;
+      source: "content" | "thought";
+      action: "dismiss" | "remove" | "restrict";
+    }) =>
       z
         .object({
           reportId: uuidish,
@@ -256,10 +283,16 @@ export const resolveReport = createServerFn({ method: "POST" })
 
     if (data.action === "remove") {
       if (report.target_type === "post")
-        await db.prepare("UPDATE posts SET deleted_at = ? WHERE id = ?").bind(now, report.target_id).run();
+        await db
+          .prepare("UPDATE posts SET deleted_at = ? WHERE id = ?")
+          .bind(now, report.target_id)
+          .run();
       else if (report.target_type === "reel") await removeReel(db, report.target_id, now);
       else if (report.target_type === "thought")
-        await db.prepare("UPDATE thoughts SET deleted_at = ? WHERE id = ?").bind(now, report.target_id).run();
+        await db
+          .prepare("UPDATE thoughts SET deleted_at = ? WHERE id = ?")
+          .bind(now, report.target_id)
+          .run();
     }
     if (data.action === "restrict") {
       const author = await db
@@ -275,17 +308,29 @@ export const resolveReport = createServerFn({ method: "POST" })
         .bind(report.target_id)
         .first<{ id: string }>();
       if (author && author.id !== profile.id)
-        await db.prepare("UPDATE profiles SET is_restricted = 1, restricted_at = ? WHERE id = ?").bind(now, author.id).run();
+        await db
+          .prepare("UPDATE profiles SET is_restricted = 1, restricted_at = ? WHERE id = ?")
+          .bind(now, author.id)
+          .run();
     }
-    const status = data.action === "dismiss" ? "dismissed" : data.source === "content" ? "actioned" : "actioned";
-    await db.prepare(`UPDATE ${table} SET status = ?, reviewed_at = ? WHERE id = ?`).bind(status, now, data.reportId).run();
+    const status =
+      data.action === "dismiss" ? "dismissed" : data.source === "content" ? "actioned" : "actioned";
+    await db
+      .prepare(`UPDATE ${table} SET status = ?, reviewed_at = ? WHERE id = ?`)
+      .bind(status, now, data.reportId)
+      .run();
     return { ok: true };
   });
 
 /** Any signed-in member can report a post, reel or profile to LeBeHo. */
 export const reportContent = createServerFn({ method: "POST" })
   .validator(
-    (input: { targetType: "post" | "reel" | "profile"; targetId: string; reason: string; details?: string }) =>
+    (input: {
+      targetType: "post" | "reel" | "profile";
+      targetId: string;
+      reason: string;
+      details?: string;
+    }) =>
       z
         .object({
           targetType: z.enum(["post", "reel", "profile"]),
@@ -310,7 +355,14 @@ export const reportContent = createServerFn({ method: "POST" })
       .prepare(
         "INSERT INTO content_reports (id, reporter_id, target_type, target_id, reason, details) VALUES (?, ?, ?, ?, ?, ?)",
       )
-      .bind(crypto.randomUUID(), profile.id, data.targetType, data.targetId, data.reason, data.details || null)
+      .bind(
+        crypto.randomUUID(),
+        profile.id,
+        data.targetType,
+        data.targetId,
+        data.reason,
+        data.details || null,
+      )
       .run();
     return { ok: true };
   });

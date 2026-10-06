@@ -107,7 +107,9 @@ function Profile() {
     if (!live) return next;
     const avatarMediaId = avatarFile ? (await uploadMedia(avatarFile, "avatar")).id : undefined;
     const { avatar: _a, ...fields } = next;
-    const saved = await updateProfile({ data: { ...fields, ...(avatarMediaId ? { avatarMediaId } : {}) } });
+    const saved = await updateProfile({
+      data: { ...fields, ...(avatarMediaId ? { avatarMediaId } : {}) },
+    });
     setAvatarFile(null);
     queryClient.invalidateQueries({ queryKey: ["viewer"] });
     queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -280,7 +282,11 @@ function Profile() {
                 : `${themeLabel(preference)} mode`}
             </p>
           </div>
-          <div className="flex rounded-lg border border-border p-1" role="group" aria-label="Choose appearance">
+          <div
+            className="flex rounded-lg border border-border p-1"
+            role="group"
+            aria-label="Choose appearance"
+          >
             {(["system", "light", "dark"] as ThemePreference[]).map((option) => (
               <button
                 key={option}
