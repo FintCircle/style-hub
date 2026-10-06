@@ -3,6 +3,7 @@
   // Bindings must live here: a wrangler deploy replaces any bindings added only in the dashboard.
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "style-hub",
+  "compatibility_date": "2024-09-25",
   "compatibility_flags": ["nodejs_compat"],
   "keep_vars": true,
   "d1_databases": [
