@@ -1,0 +1,22 @@
+{
+  // Nitro merges this into the generated deploy config (.output/server/wrangler.json).
+  // Bindings must live here: a wrangler deploy replaces any bindings added only in the dashboard.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "style-hub",
+  "compatibility_flags": ["nodejs_compat"],
+  "keep_vars": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "DB",
+      "database_id": "073e1f43-759d-430b-90f2-091267c89107",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "lebehomedia"
+    }
+  ]
+}

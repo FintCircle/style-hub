@@ -1,8 +1,9 @@
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
+import { posts as samplePosts, reels as sampleReels } from "@/lib/lebeho-data";
 import { listFeed, listReels } from "@/lib/lebeho.functions";
 
-/** Database-backed feed. An unavailable database is empty, never seeded content. */
+/** Live D1 posts on Cloudflare; sample posts where no database is attached (preview). */
 export function useFeed(options: { rushOnly?: boolean } = {}) {
   const { isSignedIn } = useAuth();
   const query = useQuery({
@@ -10,8 +11,9 @@ export function useFeed(options: { rushOnly?: boolean } = {}) {
     queryFn: () => listFeed({ data: options.rushOnly ? { rushOnly: true } : {} }),
   });
   const live = query.data?.live ?? false;
+  const fallback = options.rushOnly ? samplePosts.filter((p) => p.rushEndsAt) : samplePosts;
   return {
-    posts: query.data?.posts ?? [],
+    posts: live ? query.data!.posts : query.isLoading ? [] : fallback,
     live,
     isLoading: query.isLoading,
   };
@@ -24,5 +26,5 @@ export function useReels() {
     queryFn: () => listReels(),
   });
   const live = query.data?.live ?? false;
-  return { reels: query.data?.reels ?? [], live, isLoading: query.isLoading };
+  return { reels: live ? query.data!.reels : query.isLoading ? [] : sampleReels, live };
 }

@@ -33,77 +33,61 @@ export type CfEnv = {
 
 const KEY = "__lebehoCfEnv";
 
-export function setCfEnv(env: unknown) {
-  if (env && typeof env === "object") (globalThis as Record<string, unknown>)[KEY] = env;
-}
-
 type AnyRecord = Record<string, unknown>;
 
 /**
- * Resolves the Worker `env` bindings. In production Nitro's cloudflare-module entry
- * receives `fetch(request, env, ctx)` first: it stores env on `globalThis.__env__`
- * and on `request.runtime.cloudflare.env`. Our src/server.ts wrapper is NOT the
- * outer Worker export, so its own capture alone is never enough.
+ * Cloudflare's canonical binding source: `env` from the runtime module `cloudflare:workers`.
+ * The specifier is built at runtime so Vite/Node (preview) never try to resolve it; on
+ * workerd it resolves natively and exposes DB / MEDIA / secrets for the current request.
  */
-let workersEnv: AnyRecord | null | undefined;
-
-/**
- * Loads Cloudflare's canonical runtime env (`import { env } from "cloudflare:workers"`).
- * The specifier is computed so the bundler leaves it for workerd to resolve; outside
- * Cloudflare the import fails and we cache null.
- */
-export async function loadWorkersEnv(): Promise<AnyRecord | null> {
-  if (workersEnv !== undefined) return workersEnv;
-  try {
-    const spec = ["cloudflare", "workers"].join(":");
-    const mod = (await import(/* @vite-ignore */ spec)) as { env?: AnyRecord };
-    workersEnv = mod.env ?? null;
-  } catch {
-    workersEnv = null;
-  }
-  return workersEnv;
+let workersEnv: AnyRecord | undefined;
+try {
+  const specifier = ["cloudflare", "workers"].join(":");
+  const mod = (await import(/* @vite-ignore */ specifier)) as { env?: AnyRecord };
+  workersEnv = mod.env;
+} catch {
+  workersEnv = undefined;
 }
 
+export function setCfEnv(env: unknown) {
+  if (env && typeof env === "object") (globalThis as AnyRecord)[KEY] = env;
+}
+
+function pick(source: unknown, key: string): unknown {
+  if (!source || typeof source !== "object") return undefined;
+  try {
+    return (source as AnyRecord)[key];
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Resolves Worker bindings. Order: cloudflare:workers env, the request's
+ * runtime.cloudflare.env (set by Nitro's Worker entry), globalThis.__env__, then the
+ * wrapper capture. Keys are read individually because the workers env is a proxy.
+ */
 export function getCfEnv(request?: Request): CfEnv {
   const g = globalThis as AnyRecord;
   const req = request as unknown as
     | { runtime?: { cloudflare?: { env?: AnyRecord } }; env?: AnyRecord }
     | undefined;
-  const candidates = [
-    workersEnv ?? undefined,
-    req?.runtime?.cloudflare?.env,
-    req?.env,
-    g['__env__'] as AnyRecord | undefined,
-    g[KEY] as AnyRecord | undefined,
-  ];
-  const merged: AnyRecord = {};
-  for (const c of candidates.reverse()) if (c && typeof c === "object") Object.assign(merged, c);
-  // The cloudflare:workers env is a proxy; read bindings explicitly.
-  for (const c of [workersEnv, req?.runtime?.cloudflare?.env, g['__env__'] as AnyRecord | undefined]) {
-    if (!c) continue;
-    if (!merged['DB'] && c['DB']) merged['DB'] = c['DB'];
-    if (!merged['MEDIA'] && c['MEDIA']) merged['MEDIA'] = c['MEDIA'];
-    if (!merged['CLERK_SECRET_KEY'] && c['CLERK_SECRET_KEY']) merged['CLERK_SECRET_KEY'] = c['CLERK_SECRET_KEY'];
-    if (!merged['CLERK_WEBHOOK_SECRET'] && c['CLERK_WEBHOOK_SECRET'])
-      merged['CLERK_WEBHOOK_SECRET'] = c['CLERK_WEBHOOK_SECRET'];
+  const sources = [workersEnv, req?.runtime?.cloudflare?.env, req?.env, g["__env__"], g[KEY]];
+  const out: AnyRecord = {};
+  for (const key of ["DB", "MEDIA", "CLERK_SECRET_KEY", "CLERK_WEBHOOK_SECRET", "MEDIA_PUBLIC_URL"]) {
+    for (const s of sources) {
+      const v = pick(s, key);
+      if (v) {
+        out[key] = v;
+        break;
+      }
+    }
   }
-  if (!merged['DB'] && g['DB']) merged['DB'] = g['DB'];
-  if (!merged['MEDIA'] && g['MEDIA']) merged['MEDIA'] = g['MEDIA'];
-  return merged as CfEnv;
-}
-
-/** Async variant: makes sure the cloudflare:workers env is loaded first. */
-export async function cfEnv(request?: Request): Promise<CfEnv> {
-  await loadWorkersEnv();
-  return getCfEnv(request);
+  return out as CfEnv;
 }
 
 export function getDb(request?: Request): D1Database | null {
   return getCfEnv(request).DB ?? null;
-}
-
-export async function db(request?: Request): Promise<D1Database | null> {
-  return (await cfEnv(request)).DB ?? null;
 }
 
 export function getClerkSecret(): string | undefined {

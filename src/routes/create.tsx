@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FileVideo, ImagePlus, Timer, Plus, Upload, X } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query"; 
 import { toast } from "sonner";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { AccountGate } from "@/components/lebeho/AccountGate";
 import { uploadMedia, videoDuration } from "@/lib/account";
-import { createPost, createReel } from "@/lib/lebeho.functions";
-import { hashtags, normalizeHashtag } from "@/lib/lebeho-data";
+import { createPost, createReel, searchHashtags } from "@/lib/lebeho.functions";
+import { normalizeHashtag } from "@/lib/lebeho-data";
 
 export const Route = createFileRoute("/create")({
   head: () => ({
@@ -67,11 +67,13 @@ function Create() {
     photos: [],
   });
   const normalizedHashtag = normalizeHashtag(hashtagInput);
-  const matchingHashtags = normalizedHashtag
-    ? hashtags.filter((hashtag) => hashtag.slug.startsWith(normalizedHashtag))
-    : [];
-  const canCreateHashtag =
-    Boolean(normalizedHashtag) && !hashtags.some((hashtag) => hashtag.slug === normalizedHashtag);
+  const hashtagSearch = useQuery({
+    queryKey: ["hashtags", normalizedHashtag],
+    queryFn: () => searchHashtags({ data: { query: normalizedHashtag } }),
+    enabled: normalizedHashtag.length > 0,
+  });
+  const matchingHashtags = hashtagSearch.data?.hashtags ?? [];
+  const canCreateHashtag = Boolean(normalizedHashtag) && !matchingHashtags.some((hashtag) => hashtag.slug === normalizedHashtag);
 
   function selectHashtag(slug: string) {
     setSelectedHashtag(slug);
@@ -148,15 +150,15 @@ function Create() {
         const video = await uploadMedia(reel.file, "video", durationMs);
         await createReel({ data: { videoMediaId: video.id, caption: text, durationMs: Math.max(1, Math.round(durationMs)) } });
         queryClient.invalidateQueries({ queryKey: ["reels"] });
-        toast.success("Your reel was sent to LeBeHo for review.");
-        navigate({ to: "/reels" });
+        toast.success("Reel sent for review. It goes live once LeBeHo approves it.");
+        navigate({ to: "/profile" });
         return;
       }
       const voteChoices = choices.map((c) => c.trim()).filter(Boolean);
       if (withVote && voteChoices.length < 2) throw new Error("Add at least two vote choices.");
       const uploaded = [];
       for (const photo of photos) uploaded.push(await uploadMedia(photo.file, "image"));
-      const hashtagName = hashtags.find((h) => h.slug === selectedHashtag)?.name;
+      const hashtagName = hashtagSearch.data?.hashtags.find((h) => h.slug === selectedHashtag)?.name ?? selectedHashtag;
       await createPost({
         data: {
           text,
@@ -284,16 +286,13 @@ function Create() {
                   </p>
                 </div>
                 {selectedHashtag && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedHashtag(undefined)}
-                    className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    #
-                    {hashtags.find((hashtag) => hashtag.slug === selectedHashtag)?.name ??
-                      selectedHashtag}{" "}
-                    ×
-                  </button>
+              <button
+                type="button"
+                onClick={() => setSelectedHashtag(undefined)}
+                className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+              >
+                #{selectedHashtag} ×
+              </button>
                 )}
               </div>
               {!selectedHashtag && (
@@ -412,9 +411,6 @@ function Create() {
           </div>
         ) : (
           <div className="mt-7">
-            <div className="mb-6 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm leading-relaxed text-muted-foreground">
-              Every reel is reviewed by LeBeHo before it appears to other users. You&apos;ll see a pending badge on your profile while LeBeHo reviews it.
-            </div>
             <input
               ref={reelInputRef}
               type="file"
@@ -454,6 +450,10 @@ function Create() {
               placeholder="Add a caption…"
               className="mt-5 w-full border-b border-border bg-transparent pb-3 text-[15px] outline-none placeholder:text-muted-foreground"
             />
+            <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+              Every reel is reviewed by LeBeHo before it goes live. You'll see it as pending on your
+              profile until it's approved.
+            </p>
           </div>
         )}
 

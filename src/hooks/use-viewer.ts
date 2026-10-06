@@ -18,6 +18,8 @@ export function useViewer() {
     isSignedIn: Boolean(isSignedIn),
     profile: query.data?.profile ?? null,
     live: query.data?.live ?? false,
+    isAdmin: query.data?.isAdmin ?? false,
+    restricted: query.data?.restricted ?? false,
     isLoadingProfile: query.isLoading,
   };
 }
