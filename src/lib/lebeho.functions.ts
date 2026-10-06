@@ -456,7 +456,7 @@ function toReel(r: ReelRow, mediaUrl: (key: string | null | undefined) => string
     likes: Number(r.likes),
     likedByViewer: Boolean(r.mine),
     duration: `0:${String(secs).padStart(2, "0")}`,
-    status: (r.status ?? "approved") as Reel["status"],
+    status: (r.status ?? "approved") as NonNullable<Reel["status"]>,
   };
 }
 
