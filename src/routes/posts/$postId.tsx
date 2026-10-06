@@ -7,13 +7,13 @@ import { Thoughts } from "@/components/lebeho/Thoughts";
 import { VoteBlock } from "@/components/lebeho/VoteBlock";
 import { PostImageGallery } from "@/components/lebeho/PostImageGallery";
 import { HashtagLink } from "@/components/lebeho/HashtagLink";
-import { getPost } from "@/lib/lebeho-data";
+import { getPostById } from "@/lib/lebeho.functions";
 
 export const Route = createFileRoute("/posts/$postId")({
-  loader: ({ params }) => {
-    const post = getPost(params.postId);
-    if (!post) throw notFound();
-    return post;
+  loader: async ({ params }) => {
+    const result = await getPostById({ data: { postId: params.postId } });
+    if (!result.post) throw notFound();
+    return result.post;
   },
   head: ({ loaderData }) => ({
     meta: [

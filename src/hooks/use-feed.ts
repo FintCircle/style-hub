@@ -3,11 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { listFeed, listReels } from "@/lib/lebeho.functions";
 
 /** Database-backed feed. An unavailable database is empty, never seeded content. */
-export function useFeed(options: { rushOnly?: boolean } = {}) {
+export function useFeed(options: { rushOnly?: boolean; authorHandle?: string } = {}) {
   const { isSignedIn } = useAuth();
   const query = useQuery({
-    queryKey: ["feed", options.rushOnly ?? false, isSignedIn ?? false],
-    queryFn: () => listFeed({ data: options.rushOnly ? { rushOnly: true } : {} }),
+    queryKey: ["feed", options.rushOnly ?? false, options.authorHandle ?? "", isSignedIn ?? false],
+    queryFn: () => listFeed({ data: { ...(options.rushOnly ? { rushOnly: true } : {}), ...(options.authorHandle ? { authorHandle: options.authorHandle } : {}) } }),
   });
   const live = query.data?.live ?? false;
   return {

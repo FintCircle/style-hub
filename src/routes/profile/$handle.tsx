@@ -2,7 +2,7 @@ import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { PostCard } from "@/components/lebeho/PostCard";
-import { getProfile, posts } from "@/lib/lebeho-data";
+import { getProfileByHandle } from "@/lib/lebeho.functions";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/profile/$handle")({
-  loader: ({ params }) => {
-    const profile = getProfile(params.handle);
-    if (!profile) throw notFound();
-    return profile;
+  loader: async ({ params }) => {
+    const result = await getProfileByHandle({ data: { handle: params.handle } });
+    if (!result.profile) throw notFound();
+    return result;
   },
   head: ({ loaderData }) => ({
     meta: [
@@ -29,8 +29,7 @@ export const Route = createFileRoute("/profile/$handle")({
 });
 
 function PublicProfile() {
-  const profile = Route.useLoaderData();
-  const authoredPosts = posts.filter((post) => post.handle === profile.handle);
+  const { profile, posts: authoredPosts } = Route.useLoaderData();
   const socialLinks = [
     ["Instagram", profile.socials?.instagram],
     ["TikTok", profile.socials?.tiktok],

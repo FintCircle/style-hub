@@ -2,13 +2,13 @@ import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { PostCard } from "@/components/lebeho/PostCard";
-import { getHashtag, getHashtagPosts } from "@/lib/lebeho-data";
+import { listHashtagPosts } from "@/lib/lebeho.functions";
 
 export const Route = createFileRoute("/hashtags/$hashtag")({
-  loader: ({ params }) => {
-    const hashtag = getHashtag(params.hashtag);
-    if (!hashtag) throw notFound();
-    return { hashtag, posts: getHashtagPosts(hashtag.slug) };
+  loader: async ({ params }) => {
+    const result = await listHashtagPosts({ data: { slug: params.hashtag } });
+    if (!result.name) throw notFound();
+    return { hashtag: { slug: params.hashtag.replace(/^#/, "").toLowerCase(), name: result.name }, posts: result.posts };
   },
   head: ({ loaderData }) => ({
     meta: [

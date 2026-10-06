@@ -124,6 +124,45 @@ export const listFeed = createServerFn({ method: "POST" })
     return { live: true, posts };
   });
 
+export const getPostById = createServerFn({ method: "POST" })
+  .inputValidator((input: { postId: string }) => z.object({ postId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const result = await listFeed({ data: {} });
+    return { live: result.live, post: result.posts.find((post) => post.id === data.postId) ?? null };
+  });
+
+export const getProfileByHandle = createServerFn({ method: "POST" })
+  .inputValidator((input: { handle: string }) => z.object({ handle: z.string().trim().min(1).max(40) }).parse(input))
+  .handler(async ({ data }) => {
+    const { db: loadDb, mediaUrl } = await import("./cf-env.server");
+    const db = await loadDb(getRequest());
+    if (!db) return { live: false as const, profile: null, posts: [] as Post[] };
+    const handle = data.handle.replace(/^@/, "").toLowerCase();
+    const profile = await db.prepare(`SELECT id, display_name, username, bio, about, website, instagram, tiktok, x_handle, profile_image_url, profile_border_color FROM profiles WHERE username = ?`).bind(handle).first<{
+      id: string; display_name: string; username: string; bio: string; about: string; website: string | null; instagram: string | null; tiktok: string | null; x_handle: string | null; profile_image_url: string | null; profile_border_color: string | null;
+    }>();
+    if (!profile) return { live: true as const, profile: null, posts: [] as Post[] };
+    const feed = await listFeed({ data: { authorHandle: handle } });
+    return {
+      live: true as const,
+      profile: { id: profile.id, name: profile.display_name, handle: `@${profile.username}`, bio: profile.bio, about: profile.about, website: profile.website ?? undefined, socials: { instagram: profile.instagram ?? undefined, tiktok: profile.tiktok ?? undefined, x: profile.x_handle ?? undefined }, avatar: mediaUrl(profile.profile_image_url) ?? undefined, avatarBorderColor: profile.profile_border_color ?? undefined },
+      posts: feed.posts,
+    };
+  });
+
+export const listHashtagPosts = createServerFn({ method: "POST" })
+  .inputValidator((input: { slug: string }) => z.object({ slug: z.string().trim().min(1).max(40) }).parse(input))
+  .handler(async ({ data }) => {
+    const { db: loadDb } = await import("./cf-env.server");
+    const db = await loadDb(getRequest());
+    if (!db) return { live: false as const, name: data.slug, posts: [] as Post[] };
+    const slug = data.slug.replace(/^#/, "").toLowerCase();
+    const hashtag = await db.prepare("SELECT slug, name FROM hashtags WHERE slug = ?").bind(slug).first<{ slug: string; name: string }>();
+    if (!hashtag) return { live: true as const, name: slug, posts: [] as Post[] };
+    const feed = await listFeed({ data: {} });
+    return { live: true as const, name: hashtag.name, posts: feed.posts.filter((post) => post.hashtag === hashtag.slug) };
+  });
+
 const createPostSchema = z.object({
   text: z.string().trim().max(2000),
   mediaIds: z.array(z.string().uuid()).max(10),

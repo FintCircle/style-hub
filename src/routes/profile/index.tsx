@@ -7,7 +7,7 @@ import { uploadMedia } from "@/lib/account";
 import { listMyReels, updateProfile } from "@/lib/lebeho.functions";
 import { createFileRoute } from "@tanstack/react-router";
 import { Camera, ExternalLink, Pencil, Plus } from "lucide-react";
-import { posts, reels, me } from "@/lib/lebeho-data";
+import { useFeed, useReels } from "@/hooks/use-feed";
 import { PostCard } from "@/components/lebeho/PostCard";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -27,12 +27,12 @@ import { Textarea } from "@/components/ui/textarea";
 export const Route = createFileRoute("/profile/")({
   head: () => ({
     meta: [
-      { title: `${me.name} — LeBeHo profile` },
+      { title: "Your LeBeHo profile" },
       {
         name: "description",
         content: "Your LeBeHo activity: posts, Stylist thoughts, and reels in one place.",
       },
-      { property: "og:title", content: `${me.name} — LeBeHo profile` },
+      { property: "og:title", content: "Your LeBeHo profile" },
       {
         property: "og:description",
         content: "Posts, thoughts and reels from one fashion identity.",
@@ -65,14 +65,14 @@ type ProfileDetails = {
 };
 
 const initialProfile: ProfileDetails = {
-  name: me.name,
-  bio: me.bio,
-  website: me.website,
-  instagram: me.socials.instagram,
-  tiktok: me.socials.tiktok,
-  x: me.socials.x,
-  about: me.about,
-  avatar: me.avatar,
+  name: "",
+  bio: "",
+  website: "",
+  instagram: "",
+  tiktok: "",
+  x: "",
+  about: "",
+  avatar: "",
 };
 
 function Profile() {
@@ -86,14 +86,11 @@ function Profile() {
   const [saving, setSaving] = useState(false);
   const viewer = useViewer();
   const queryClient = useQueryClient();
-  const myReelsQuery = useQuery({
-    queryKey: ["my-reels"],
-    queryFn: () => listMyReels(),
-    enabled: Boolean(viewer.isSignedIn && viewer.profile),
-  });
   const live = viewer.live && viewer.profile;
-  const handle = viewer.profile?.handle ?? me.handle;
-  const mine = live ? [] : posts.slice(0, 2);
+  const handle = viewer.profile?.handle ?? "";
+  const feedQuery = useFeed({ authorHandle: handle });
+  const reelsQuery = useReels();
+  const mine = feedQuery.posts;
 
   useEffect(() => {
     if (!viewer.profile) return;
@@ -291,7 +288,7 @@ function Profile() {
         )}
 
         <dl className="mt-6 grid grid-cols-5 gap-2 border-y border-border py-4 text-center">
-          {Object.entries(me.stats).map(([key, value]) => (
+          {Object.entries({ Posts: feedQuery.posts.length, Thoughts: feedQuery.posts.reduce((total, post) => total + post.thoughtCount, 0), Reels: reelsQuery.reels.length }).map(([key, value]) => (
             <div key={key}>
               <dt className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
                 {key}
@@ -329,7 +326,7 @@ function Profile() {
         {tab === "Posts" && mine.map((post) => <PostCard key={post.id} post={post} />)}
         {tab === "Thoughts" && (
           <div className="space-y-6 px-5 py-8">
-            {posts
+            {feedQuery.posts
               .flatMap((post) => post.thoughts.map((thought) => ({ thought, post })))
               .slice(0, 3)
               .map(({ thought, post }) => (
@@ -344,8 +341,7 @@ function Profile() {
         )}
         {tab === "Reels" && (
           <div className="grid grid-cols-3 gap-1 px-1 py-8">
-            {live && myReelsQuery.data
-              ? myReelsQuery.data.map((reel) => (
+            {reelsQuery.reels.map((reel) => (
                   <div key={reel.id} className="relative aspect-[9/16] overflow-hidden rounded-sm bg-muted">
                     <video src={reel.video} muted playsInline className="size-full object-cover" />
                     {reel.status !== "approved" && (
@@ -354,15 +350,6 @@ function Profile() {
                       </span>
                     )}
                   </div>
-                ))
-              : reels.map((reel) => (
-                  <img
-                    key={reel.id}
-                    src={reel.poster}
-                    alt={reel.caption}
-                    loading="lazy"
-                    className="aspect-[9/16] w-full object-cover"
-                  />
                 ))}
           </div>
         )}
