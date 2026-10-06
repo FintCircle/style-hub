@@ -6,6 +6,7 @@ import { Countdown, useCountdown } from "./Countdown";
 import { ProfileLink } from "./ProfileLink";
 import { PostImageGallery } from "./PostImageGallery";
 import { HashtagLink } from "./HashtagLink";
+import { ReportButton } from "./ReportButton";
 
 export function PostCard({ post }: { post: Post }) {
   const remaining = useCountdown(post.rushEndsAt);
@@ -29,11 +30,14 @@ export function PostCard({ post }: { post: Post }) {
             </Link>
           </p>
         </div>
-        {live && (
-          <span className="flex items-center gap-1.5 rounded-full border border-rush/50 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-rush">
-            <Timer className="size-3" /> Rush
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {live && (
+            <span className="flex items-center gap-1.5 rounded-full border border-rush/50 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-rush">
+              <Timer className="size-3" /> Rush
+            </span>
+          )}
+          {post.live && <ReportButton targetType="post" targetId={post.id} />}
+        </div>
       </header>
 
       {post.text && (
