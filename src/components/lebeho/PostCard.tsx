@@ -6,6 +6,7 @@ import { Countdown, useCountdown } from "./Countdown";
 import { ProfileLink } from "./ProfileLink";
 import { PostImageGallery } from "./PostImageGallery";
 import { HashtagLink } from "./HashtagLink";
+import { ProfileAvatar } from "./ProfileAvatar";
 
 export function PostCard({ post }: { post: Post }) {
   const remaining = useCountdown(post.rushEndsAt);
@@ -13,14 +14,21 @@ export function PostCard({ post }: { post: Post }) {
 
   return (
     <article className="border-b border-border px-5 py-8">
-      <header className="flex items-baseline justify-between gap-4">
-        <div>
+      <header className="flex items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <ProfileAvatar
+            name={post.author}
+            src={post.avatarUrl}
+            borderColor={post.avatarBorderColor}
+          />
+          <div>
           <h3 className="font-editorial text-lg leading-none">
             <ProfileLink name={post.author} handle={post.handle} />
           </h3>
           <p className="mt-1 text-xs tracking-wide text-muted-foreground">
             {post.handle} · {post.time}
           </p>
+          </div>
         </div>
         {live && (
           <span className="flex items-center gap-1.5 rounded-full border border-rush/50 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-rush">

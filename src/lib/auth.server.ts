@@ -15,6 +15,7 @@ export type ProfileRow = {
   tiktok: string | null;
   x_handle: string | null;
   profile_image_url: string | null;
+  profile_border_color: string;
   email: string | null;
   is_restricted: number | null;
   created_at: string;
@@ -43,6 +44,13 @@ function slugify(value: string) {
     .slice(0, 20);
 }
 
+const PROFILE_COLORS = ["#C77D61", "#6C8E8A", "#B493C5", "#C7A36A", "#6F88B8", "#A4775B"];
+
+function profileColor(seed: string) {
+  const hash = [...seed].reduce((total, character) => total + character.charCodeAt(0), 0);
+  return PROFILE_COLORS[hash % PROFILE_COLORS.length];
+}
+
 /** Returns the D1 profile for a Clerk user, creating it on first sign-in. */
 export async function ensureProfile(db: D1Database, clerkUserId: string): Promise<ProfileRow> {
   const existing = await db
@@ -68,10 +76,10 @@ export async function ensureProfile(db: D1Database, clerkUserId: string): Promis
     const id = crypto.randomUUID();
     await db
       .prepare(
-        `INSERT INTO profiles (id, clerk_user_id, username, display_name, email, profile_image_url)
-         VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(clerk_user_id) DO NOTHING`,
+        `INSERT INTO profiles (id, clerk_user_id, username, display_name, email, profile_image_url, profile_border_color)
+         VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(clerk_user_id) DO NOTHING`,
       )
-      .bind(id, clerkUserId, username, displayName, email, user.imageUrl ?? null)
+      .bind(id, clerkUserId, username, displayName, email, user.imageUrl ?? null, profileColor(clerkUserId))
       .run();
     const created = await db
       .prepare("SELECT * FROM profiles WHERE clerk_user_id = ?")
