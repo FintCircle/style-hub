@@ -33,34 +33,57 @@ export type CfEnv = {
 
 const KEY = "__lebehoCfEnv";
 
-export function setCfEnv(env: unknown) {
-  if (env && typeof env === "object") (globalThis as Record<string, unknown>)[KEY] = env;
-}
-
 type AnyRecord = Record<string, unknown>;
 
 /**
- * Resolves the Worker `env` bindings. In production Nitro's cloudflare-module entry
- * receives `fetch(request, env, ctx)` first: it stores env on `globalThis.__env__`
- * and on `request.runtime.cloudflare.env`. Our src/server.ts wrapper is NOT the
- * outer Worker export, so its own capture alone is never enough.
+ * Cloudflare's canonical binding source: `env` from the runtime module `cloudflare:workers`.
+ * The specifier is built at runtime so Vite/Node (preview) never try to resolve it; on
+ * workerd it resolves natively and exposes DB / MEDIA / secrets for the current request.
+ */
+let workersEnv: AnyRecord | undefined;
+try {
+  const specifier = ["cloudflare", "workers"].join(":");
+  const mod = (await import(/* @vite-ignore */ specifier)) as { env?: AnyRecord };
+  workersEnv = mod.env;
+} catch {
+  workersEnv = undefined;
+}
+
+export function setCfEnv(env: unknown) {
+  if (env && typeof env === "object") (globalThis as AnyRecord)[KEY] = env;
+}
+
+function pick(source: unknown, key: string): unknown {
+  if (!source || typeof source !== "object") return undefined;
+  try {
+    return (source as AnyRecord)[key];
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Resolves Worker bindings. Order: cloudflare:workers env, the request's
+ * runtime.cloudflare.env (set by Nitro's Worker entry), globalThis.__env__, then the
+ * wrapper capture. Keys are read individually because the workers env is a proxy.
  */
 export function getCfEnv(request?: Request): CfEnv {
   const g = globalThis as AnyRecord;
   const req = request as unknown as
     | { runtime?: { cloudflare?: { env?: AnyRecord } }; env?: AnyRecord }
     | undefined;
-  const candidates = [
-    req?.runtime?.cloudflare?.env,
-    req?.env,
-    g['__env__'] as AnyRecord | undefined,
-    g[KEY] as AnyRecord | undefined,
-  ];
-  const merged: AnyRecord = {};
-  for (const c of candidates.reverse()) if (c && typeof c === "object") Object.assign(merged, c);
-  if (!merged['DB'] && g['DB']) merged['DB'] = g['DB'];
-  if (!merged['MEDIA'] && g['MEDIA']) merged['MEDIA'] = g['MEDIA'];
-  return merged as CfEnv;
+  const sources = [workersEnv, req?.runtime?.cloudflare?.env, req?.env, g["__env__"], g[KEY]];
+  const out: AnyRecord = {};
+  for (const key of ["DB", "MEDIA", "CLERK_SECRET_KEY", "CLERK_WEBHOOK_SECRET", "MEDIA_PUBLIC_URL"]) {
+    for (const s of sources) {
+      const v = pick(s, key);
+      if (v) {
+        out[key] = v;
+        break;
+      }
+    }
+  }
+  return out as CfEnv;
 }
 
 export function getDb(request?: Request): D1Database | null {
