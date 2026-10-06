@@ -3,11 +3,7 @@ import { Flag } from "lucide-react";
 import { toast } from "sonner";
 import { reportContent } from "@/lib/admin.functions";
 import { useRequireAccount } from "@/hooks/use-viewer";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const reasons = ["Not fashion", "Harassment or hate", "Spam or scam", "Nudity", "Something else"];
 
@@ -37,14 +33,23 @@ export function ReportButton({
   }
 
   return (
-    <Popover open={open} onOpenChange={(next) => (next ? requireAccount() && setOpen(true) : setOpen(false))}>
+    <Popover
+      open={open}
+      onOpenChange={(next) => (next ? requireAccount() && setOpen(true) : setOpen(false))}
+    >
       <PopoverTrigger asChild>
-        <button type="button" aria-label={`Report this ${targetType}`} className="p-1 text-muted-foreground hover:text-foreground">
+        <button
+          type="button"
+          aria-label={`Report this ${targetType}`}
+          className="p-1 text-muted-foreground hover:text-foreground"
+        >
           <Flag className="size-3.5" strokeWidth={1.5} />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-56 p-2">
-        <p className="px-2 pb-2 pt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Report to LeBeHo</p>
+        <p className="px-2 pb-2 pt-1 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          Report to LeBeHo
+        </p>
         {reasons.map((reason) => (
           <button
             key={reason}

@@ -10,13 +10,13 @@
       "binding": "DB",
       "database_name": "DB",
       "database_id": "073e1f43-759d-430b-90f2-091267c89107",
-      "migrations_dir": "migrations"
-    }
+      "migrations_dir": "migrations",
+    },
   ],
   "r2_buckets": [
     {
       "binding": "MEDIA",
-      "bucket_name": "lebehomedia"
-    }
-  ]
+      "bucket_name": "lebehomedia",
+    },
+  ],
 }

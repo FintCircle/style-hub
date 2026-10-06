@@ -33,13 +33,16 @@ type PostRow = {
 export const getViewer = createServerFn({ method: "POST" }).handler(async () => {
   const { viewerFrom, toPublicProfile, isAdminProfile } = await import("./auth.server");
   const { getDb } = await import("./cf-env.server");
-  if (!getDb(getRequest())) return { live: false as const, profile: null, isAdmin: false, restricted: false };
+  if (!getDb(getRequest()))
+    return { live: false as const, profile: null, isAdmin: false, restricted: false };
   const viewer = await viewerFrom(getRequest());
   return {
     live: true as const,
     profile: viewer ? toPublicProfile(viewer.profile) : null,
     isAdmin: viewer ? isAdminProfile(viewer.profile) : false,
-    restricted: Boolean(Number((viewer?.profile as { is_restricted?: number } | undefined)?.is_restricted ?? 0)),
+    restricted: Boolean(
+      Number((viewer?.profile as { is_restricted?: number } | undefined)?.is_restricted ?? 0),
+    ),
   };
 });
 
@@ -64,20 +67,31 @@ export const searchHashtags = createServerFn({ method: "POST" })
   });
 
 export const getHashtagPage = createServerFn({ method: "POST" })
-  .inputValidator((input: { slug: string }) => z.object({ slug: z.string().regex(/^[a-z0-9]{1,40}$/) }).parse(input))
+  .inputValidator((input: { slug: string }) =>
+    z.object({ slug: z.string().regex(/^[a-z0-9]{1,40}$/) }).parse(input),
+  )
   .handler(async ({ data }) => {
     const { getDb, mediaUrl } = await import("./cf-env.server");
     const { viewerFrom } = await import("./auth.server");
     const db = getDb(getRequest());
     if (!db) return { live: false as const, hashtag: null, posts: [] as Post[] };
-    const hashtag = await db.prepare("SELECT slug, name FROM hashtags WHERE slug = ?").bind(data.slug).first<{ slug: string; name: string }>();
+    const hashtag = await db
+      .prepare("SELECT slug, name FROM hashtags WHERE slug = ?")
+      .bind(data.slug)
+      .first<{ slug: string; name: string }>();
     if (!hashtag) return { live: true as const, hashtag: null, posts: [] as Post[] };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
     const { results } = await db
-      .prepare(`${POST_SELECT} WHERE p.hashtag_slug = ? AND p.deleted_at IS NULL ORDER BY p.created_at DESC LIMIT 60`)
+      .prepare(
+        `${POST_SELECT} WHERE p.hashtag_slug = ? AND p.deleted_at IS NULL ORDER BY p.created_at DESC LIMIT 60`,
+      )
       .bind(data.slug)
       .all<PostRow>();
-    return { live: true as const, hashtag, posts: await hydratePosts(db, results, viewer?.profile.id ?? null, mediaUrl) };
+    return {
+      live: true as const,
+      hashtag,
+      posts: await hydratePosts(db, results, viewer?.profile.id ?? null, mediaUrl),
+    };
   });
 
 /** Discovery feed. `live: false` means no database here (preview) — show samples. */
@@ -96,8 +110,12 @@ export const listFeed = createServerFn({ method: "POST" })
 
     const where = ["p.deleted_at IS NULL"];
     const binds: unknown[] = [];
-    if (data.rushOnly) where.push("p.is_rush_hour = 1 AND p.rush_hour_ends_at > ?"), binds.push(new Date().toISOString());
-    if (data.authorHandle) where.push("pr.username = ?"), binds.push(data.authorHandle.replace(/^@/, "").toLowerCase());
+    if (data.rushOnly)
+      (where.push("p.is_rush_hour = 1 AND p.rush_hour_ends_at > ?"),
+        binds.push(new Date().toISOString()));
+    if (data.authorHandle)
+      (where.push("pr.username = ?"),
+        binds.push(data.authorHandle.replace(/^@/, "").toLowerCase()));
 
     const { results: rows } = await db
       .prepare(
@@ -110,7 +128,10 @@ export const listFeed = createServerFn({ method: "POST" })
       .bind(...binds)
       .all<PostRow>();
     if (!rows.length) return { live: true, posts: [] };
-    return { live: true, posts: await hydratePosts(db, rows, viewer?.profile.id ?? null, mediaUrl) };
+    return {
+      live: true,
+      posts: await hydratePosts(db, rows, viewer?.profile.id ?? null, mediaUrl),
+    };
   });
 
 type Db = NonNullable<ReturnType<typeof import("./cf-env.server").getDb>>;
@@ -122,55 +143,58 @@ async function hydratePosts(
   viewerId: string | null,
   mediaUrl: (key: string | null | undefined) => string | null,
 ): Promise<Post[]> {
-    const ids = rows.map((r) => r.id);
-    const [images, choices, myVotes] = await Promise.all([
-      db
-        .prepare(
-          `SELECT pi.post_id, m.r2_key FROM post_images pi JOIN media m ON m.id = pi.media_id
+  const ids = rows.map((r) => r.id);
+  const [images, choices, myVotes] = await Promise.all([
+    db
+      .prepare(
+        `SELECT pi.post_id, m.r2_key FROM post_images pi JOIN media m ON m.id = pi.media_id
            WHERE pi.post_id IN (${placeholders(ids.length)}) ORDER BY pi.position`,
-        )
-        .bind(...ids)
-        .all<{ post_id: string; r2_key: string }>(),
-      db
-        .prepare(
-          `SELECT vc.id, vc.post_id, vc.label, COUNT(v.user_id) AS votes FROM vote_choices vc
+      )
+      .bind(...ids)
+      .all<{ post_id: string; r2_key: string }>(),
+    db
+      .prepare(
+        `SELECT vc.id, vc.post_id, vc.label, COUNT(v.user_id) AS votes FROM vote_choices vc
            LEFT JOIN votes v ON v.choice_id = vc.id WHERE vc.post_id IN (${placeholders(ids.length)})
            GROUP BY vc.id ORDER BY vc.position`,
-        )
-        .bind(...ids)
-        .all<{ id: string; post_id: string; label: string; votes: number }>(),
-      viewerId
-        ? db
-            .prepare(`SELECT post_id, choice_id FROM votes WHERE user_id = ? AND post_id IN (${placeholders(ids.length)})`)
-            .bind(viewerId, ...ids)
-            .all<{ post_id: string; choice_id: string }>()
-        : Promise.resolve({ results: [] as { post_id: string; choice_id: string }[] }),
-    ]);
+      )
+      .bind(...ids)
+      .all<{ id: string; post_id: string; label: string; votes: number }>(),
+    viewerId
+      ? db
+          .prepare(
+            `SELECT post_id, choice_id FROM votes WHERE user_id = ? AND post_id IN (${placeholders(ids.length)})`,
+          )
+          .bind(viewerId, ...ids)
+          .all<{ post_id: string; choice_id: string }>()
+      : Promise.resolve({ results: [] as { post_id: string; choice_id: string }[] }),
+  ]);
 
-    const posts: Post[] = rows.map((r) => {
-      const vote = choices.results
-        .filter((c) => c.post_id === r.id)
-        .map((c) => ({ id: c.id, label: c.label, votes: Number(c.votes) }));
-      const post: Post = {
-        id: r.id,
-        author: r.display_name,
-        handle: `@${r.username}`,
-        time: relativeTime(r.created_at),
-        text: r.body,
-        images: images.results.filter((i) => i.post_id === r.id).map((i) => mediaUrl(i.r2_key)!),
-        thoughts: [],
-        thoughtCount: Number(r.thought_count),
-        thoughtsClosed: Boolean(r.thoughts_closed),
-        live: true,
-      };
-      if (r.hashtag_slug) post.hashtag = r.hashtag_slug;
-      if (vote.length) post.vote = vote;
-      const mine = myVotes.results.find((v) => v.post_id === r.id)?.choice_id;
-      if (mine) post.viewerVote = mine;
-      if (r.is_rush_hour && r.rush_hour_ends_at) post.rushEndsAt = new Date(r.rush_hour_ends_at).getTime();
-      return post;
-    });
-    return posts;
+  const posts: Post[] = rows.map((r) => {
+    const vote = choices.results
+      .filter((c) => c.post_id === r.id)
+      .map((c) => ({ id: c.id, label: c.label, votes: Number(c.votes) }));
+    const post: Post = {
+      id: r.id,
+      author: r.display_name,
+      handle: `@${r.username}`,
+      time: relativeTime(r.created_at),
+      text: r.body,
+      images: images.results.filter((i) => i.post_id === r.id).map((i) => mediaUrl(i.r2_key)!),
+      thoughts: [],
+      thoughtCount: Number(r.thought_count),
+      thoughtsClosed: Boolean(r.thoughts_closed),
+      live: true,
+    };
+    if (r.hashtag_slug) post.hashtag = r.hashtag_slug;
+    if (vote.length) post.vote = vote;
+    const mine = myVotes.results.find((v) => v.post_id === r.id)?.choice_id;
+    if (mine) post.viewerVote = mine;
+    if (r.is_rush_hour && r.rush_hour_ends_at)
+      post.rushEndsAt = new Date(r.rush_hour_ends_at).getTime();
+    return post;
+  });
+  return posts;
 }
 
 const POST_SELECT = `SELECT p.id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour, p.hashtag_slug,
@@ -270,10 +294,18 @@ export const getPostDetail = createServerFn({ method: "POST" })
 const createPostSchema = z.object({
   text: z.string().trim().max(2000),
   mediaIds: z.array(z.string().uuid()).max(10),
-  hashtag: z.string().regex(/^[a-z0-9]{1,40}$/).optional(),
+  hashtag: z
+    .string()
+    .regex(/^[a-z0-9]{1,40}$/)
+    .optional(),
   hashtagName: z.string().max(40).optional(),
   vote: z.array(z.string().trim().min(1).max(80)).min(2).max(6).optional(),
-  rushMinutes: z.number().int().min(1).max(24 * 60).optional(),
+  rushMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 60)
+    .optional(),
 });
 
 export const createPost = createServerFn({ method: "POST" })
@@ -291,7 +323,8 @@ export const createPost = createServerFn({ method: "POST" })
         )
         .bind(profile.id, ...data.mediaIds)
         .all<{ id: string }>();
-      if (results.length !== data.mediaIds.length) throw new Error("One of the photos could not be found.");
+      if (results.length !== data.mediaIds.length)
+        throw new Error("One of the photos could not be found.");
     }
 
     const postId = crypto.randomUUID();
@@ -316,7 +349,9 @@ export const createPost = createServerFn({ method: "POST" })
     );
     data.mediaIds.forEach((mediaId, position) =>
       statements.push(
-        db.prepare("INSERT INTO post_images (post_id, media_id, position) VALUES (?, ?, ?)").bind(postId, mediaId, position),
+        db
+          .prepare("INSERT INTO post_images (post_id, media_id, position) VALUES (?, ?, ?)")
+          .bind(postId, mediaId, position),
       ),
     );
     data.vote?.forEach((label, position) =>
@@ -368,7 +403,9 @@ export const updateProfile = createServerFn({ method: "POST" })
     let avatarKey = profile.profile_image_url;
     if (data.avatarMediaId) {
       const media = await db
-        .prepare("SELECT r2_key FROM media WHERE id = ? AND owner_id = ? AND kind = 'avatar' AND status = 'ready'")
+        .prepare(
+          "SELECT r2_key FROM media WHERE id = ? AND owner_id = ? AND kind = 'avatar' AND status = 'ready'",
+        )
         .bind(data.avatarMediaId, profile.id)
         .first<{ r2_key: string }>();
       if (!media) throw new Error("Profile picture not found.");
@@ -392,7 +429,10 @@ export const updateProfile = createServerFn({ method: "POST" })
         profile.id,
       )
       .run();
-    const updated = await db.prepare("SELECT * FROM profiles WHERE id = ?").bind(profile.id).first();
+    const updated = await db
+      .prepare("SELECT * FROM profiles WHERE id = ?")
+      .bind(profile.id)
+      .first();
     return toPublicProfile(updated as never);
   });
 
@@ -410,13 +450,17 @@ export const createReel = createServerFn({ method: "POST" })
     const { requireCreator: requireViewer } = await import("./auth.server");
     const { db, profile } = await requireViewer(getRequest());
     const media = await db
-      .prepare("SELECT 1 FROM media WHERE id = ? AND owner_id = ? AND kind = 'video' AND status = 'ready'")
+      .prepare(
+        "SELECT 1 FROM media WHERE id = ? AND owner_id = ? AND kind = 'video' AND status = 'ready'",
+      )
       .bind(data.videoMediaId, profile.id)
       .first();
     if (!media) throw new Error("Reel video not found.");
     const id = crypto.randomUUID();
     await db
-      .prepare("INSERT INTO reels (id, author_id, video_media_id, caption, duration_ms, status) VALUES (?, ?, ?, ?, ?, 'pending')")
+      .prepare(
+        "INSERT INTO reels (id, author_id, video_media_id, caption, duration_ms, status) VALUES (?, ?, ?, ?, ?, 'pending')",
+      )
       .bind(id, profile.id, data.videoMediaId, data.caption, data.durationMs)
       .run();
     return { id };
@@ -430,7 +474,9 @@ export const listReels = createServerFn({ method: "POST" }).handler(
     if (!db) return { live: false, reels: [] };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
     const { results } = await db
-      .prepare(`${REEL_SELECT} WHERE r.deleted_at IS NULL AND r.status = 'approved' ORDER BY r.created_at DESC LIMIT 40`)
+      .prepare(
+        `${REEL_SELECT} WHERE r.deleted_at IS NULL AND r.status = 'approved' ORDER BY r.created_at DESC LIMIT 40`,
+      )
       .bind(viewer?.profile.id ?? "")
       .all<ReelRow>();
     return { live: true, reels: results.map((r) => toReel(r, mediaUrl)) };
@@ -495,7 +541,10 @@ export const getPublicProfile = createServerFn({ method: "POST" })
       if (!db) return { live: false, ...empty };
 
       const username = data.handle.replace(/^@/, "").toLowerCase();
-      const row = await db.prepare("SELECT * FROM profiles WHERE username = ?").bind(username).first();
+      const row = await db
+        .prepare("SELECT * FROM profiles WHERE username = ?")
+        .bind(username)
+        .first();
       if (!row) return { live: true, ...empty };
       const pub = toPublicProfile(row as never);
       const authorId = pub.id;
@@ -517,7 +566,9 @@ export const getPublicProfile = createServerFn({ method: "POST" })
           .bind(authorId)
           .first<Record<"posts" | "thoughts" | "reels" | "likes" | "boosts", number>>(),
         db
-          .prepare(`${POST_SELECT} WHERE p.author_id = ? AND p.deleted_at IS NULL ORDER BY p.created_at DESC LIMIT 40`)
+          .prepare(
+            `${POST_SELECT} WHERE p.author_id = ? AND p.deleted_at IS NULL ORDER BY p.created_at DESC LIMIT 40`,
+          )
           .bind(authorId)
           .all<PostRow>(),
         db
@@ -528,7 +579,13 @@ export const getPublicProfile = createServerFn({ method: "POST" })
             ORDER BY t.created_at DESC LIMIT 40`,
           )
           .bind(authorId)
-          .all<{ id: string; body: string; created_at: string; post_id: string; op_name: string }>(),
+          .all<{
+            id: string;
+            body: string;
+            created_at: string;
+            post_id: string;
+            op_name: string;
+          }>(),
         db
           .prepare(
             `${REEL_SELECT} WHERE r.deleted_at IS NULL AND r.author_id = ? AND (r.status = 'approved' OR r.author_id = ?) ORDER BY r.created_at DESC LIMIT 40`,

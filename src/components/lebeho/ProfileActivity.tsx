@@ -99,30 +99,30 @@ export function ProfileActivity({
                 <div className="grid grid-cols-3 gap-1 px-1 py-8">
                   {reels.map((reel) => (
                     <div key={reel.id} className="relative">
-                    {reel.status === "pending" && (
-                      <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]">
-                        <Clock className="size-3" /> Pending
-                      </span>
-                    )}
-                    {reel.poster ? (
-                      <img
-                        key={reel.id}
-                        src={reel.poster}
-                        alt={reel.caption || `Reel by ${reel.creator}`}
-                        loading="lazy"
-                        className="aspect-[9/16] w-full object-cover"
-                      />
-                    ) : (
-                      <video
-                        key={reel.id}
-                        src={reel.video}
-                        muted
-                        playsInline
-                        preload="metadata"
-                        aria-label={reel.caption || `Reel by ${reel.creator}`}
-                        className="aspect-[9/16] w-full bg-muted object-cover"
-                      />
-                    )}
+                      {reel.status === "pending" && (
+                        <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]">
+                          <Clock className="size-3" /> Pending
+                        </span>
+                      )}
+                      {reel.poster ? (
+                        <img
+                          key={reel.id}
+                          src={reel.poster}
+                          alt={reel.caption || `Reel by ${reel.creator}`}
+                          loading="lazy"
+                          className="aspect-[9/16] w-full object-cover"
+                        />
+                      ) : (
+                        <video
+                          key={reel.id}
+                          src={reel.video}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          aria-label={reel.caption || `Reel by ${reel.creator}`}
+                          className="aspect-[9/16] w-full bg-muted object-cover"
+                        />
+                      )}
                     </div>
                   ))}
                 </div>

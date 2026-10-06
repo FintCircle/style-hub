@@ -139,13 +139,12 @@ function ReelSlide({
         >
           <Heart
             className={
-              "size-9 " + (liked ? "fill-reels-pop text-reels-pop like-pop" : "text-reels-foreground")
+              "size-9 " +
+              (liked ? "fill-reels-pop text-reels-pop like-pop" : "text-reels-foreground")
             }
             strokeWidth={1.5}
           />
-          <span className="text-xs tabular-nums">
-            {formatLikes(baseLikes + (liked ? 1 : 0))}
-          </span>
+          <span className="text-xs tabular-nums">{formatLikes(baseLikes + (liked ? 1 : 0))}</span>
         </button>
       </div>
     </section>

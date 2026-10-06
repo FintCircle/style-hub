@@ -7,17 +7,24 @@ import { ProfileLink } from "./ProfileLink";
 import { PostImageGallery } from "./PostImageGallery";
 import { HashtagLink } from "./HashtagLink";
 import { ReportButton } from "./ReportButton";
+import { getProfile } from "@/lib/lebeho-data";
 
 export function PostCard({ post }: { post: Post }) {
   const remaining = useCountdown(post.rushEndsAt);
   const live = Boolean(post.rushEndsAt) && (remaining === null || remaining > 0);
+  const authorProfile = getProfile(post.handle);
 
   return (
     <article className="border-b border-border px-5 py-8">
       <header className="flex items-baseline justify-between gap-4">
         <div>
           <h3 className="font-editorial text-lg leading-none">
-            <ProfileLink name={post.author} handle={post.handle} />
+            <ProfileLink
+              name={post.author}
+              handle={post.handle}
+              avatar={authorProfile?.avatar}
+              size="md"
+            />
           </h3>
           <p className="mt-1 text-xs tracking-wide text-muted-foreground">
             {post.handle} ·{" "}

@@ -143,9 +143,7 @@ function PostView({ post, children }: { post: Post; children: React.ReactNode })
             </span>
           )}
         </header>
-        {post.text && (
-          <p className="mt-5 text-[18px] leading-relaxed break-words">{post.text}</p>
-        )}
+        {post.text && <p className="mt-5 text-[18px] leading-relaxed break-words">{post.text}</p>}
         {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-4" />}
         <PostImageGallery images={post.images} author={post.author} />
         {post.vote && (

@@ -123,7 +123,9 @@ function PublicProfile() {
             <SheetTitle className="text-balance font-editorial text-2xl leading-tight">
               About {profile.name}
             </SheetTitle>
-            <SheetDescription className="text-pretty">{profile.bio || profile.handle}</SheetDescription>
+            <SheetDescription className="text-pretty">
+              {profile.bio || profile.handle}
+            </SheetDescription>
           </SheetHeader>
           <div className="flex-1 overflow-y-auto overscroll-contain px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 sm:px-6">
             {profile.about ? (

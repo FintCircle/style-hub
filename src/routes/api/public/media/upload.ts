@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 const LIMITS = {
-  image: { types: ["image/jpeg", "image/png", "image/webp", "image/gif"], maxBytes: 15 * 1024 * 1024 },
+  image: {
+    types: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+    maxBytes: 15 * 1024 * 1024,
+  },
   avatar: { types: ["image/jpeg", "image/png", "image/webp"], maxBytes: 5 * 1024 * 1024 },
   video: { types: ["video/mp4", "video/quicktime", "video/webm"], maxBytes: 95 * 1024 * 1024 },
 } as const;
@@ -29,9 +32,14 @@ export const Route = createFileRoute("/api/public/media/upload")({
         const { requireCreator } = await import("@/lib/auth.server");
         const env = getCfEnv(request);
         if (!env.DB || !env.MEDIA) {
-          console.error("Missing Worker bindings", { DB: Boolean(env.DB), MEDIA: Boolean(env.MEDIA) });
+          console.error("Missing Worker bindings", {
+            DB: Boolean(env.DB),
+            MEDIA: Boolean(env.MEDIA),
+          });
           return json(
-            { error: `Server is missing storage bindings (DB: ${Boolean(env.DB)}, MEDIA: ${Boolean(env.MEDIA)}).` },
+            {
+              error: `Server is missing storage bindings (DB: ${Boolean(env.DB)}, MEDIA: ${Boolean(env.MEDIA)}).`,
+            },
             503,
           );
         }

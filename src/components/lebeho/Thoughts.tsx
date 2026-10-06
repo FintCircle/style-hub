@@ -1,11 +1,4 @@
-import {
-  ArrowUp,
-  EyeOff,
-  Flag,
-  MessageCircle,
-  MoreHorizontal,
-  UserRoundX,
-} from "lucide-react";
+import { ArrowUp, EyeOff, Flag, MessageCircle, MoreHorizontal, UserRoundX } from "lucide-react";
 import { useState } from "react";
 import {
   DropdownMenu,
@@ -17,7 +10,7 @@ import {
 import { ProfileLink } from "./ProfileLink";
 import { useRequireAccount } from "@/hooks/use-viewer";
 import type { Post, Reply, Thought } from "@/lib/lebeho-data";
-import { me } from "@/lib/lebeho-data";
+import { me, getProfile } from "@/lib/lebeho-data";
 import {
   addThought,
   addThoughtReply,
@@ -79,6 +72,7 @@ function Conversation({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const replies = thought.replies ?? [];
+  const thoughtAuthorProfile = getProfile(thought.handle);
 
   const sendReply = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -96,14 +90,19 @@ function Conversation({
     <article className="border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs tracking-wide text-muted-foreground">
+          <div className="flex items-center gap-2">
             <ProfileLink
               name={thought.author}
               handle={thought.handle}
+              avatar={thoughtAuthorProfile?.avatar}
+              size="sm"
               className="font-editorial text-base text-foreground"
             />
-            {thought.handle === opHandle && <OpBadge />} {thought.handle} · {thought.time}
-          </p>
+            {thought.handle === opHandle && <OpBadge />}
+            <span className="text-xs tracking-wide text-muted-foreground">
+              {thought.handle} · {thought.time}
+            </span>
+          </div>
           <p className="mt-2 text-[15px] leading-relaxed break-words">{thought.text}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -155,24 +154,32 @@ function Conversation({
       </button>
       {expanded && (
         <ol className="mt-4 space-y-4 border-l border-border pl-4">
-          {replies.map((reply) => (
-            <li key={reply.id} className="flex gap-2">
-              <span aria-hidden="true" className="pt-0.5 text-sm text-muted-foreground">
-                ↳
-              </span>
-              <div className="min-w-0">
-                <p className="text-xs tracking-wide text-muted-foreground">
-                  <ProfileLink
-                    name={reply.author}
-                    handle={reply.handle}
-                    className="font-editorial text-sm text-foreground"
-                  />
-                  {reply.handle === opHandle && <OpBadge />} {reply.handle} · {reply.time}
-                </p>
-                <p className="mt-1 text-[15px] leading-relaxed break-words">{reply.text}</p>
-              </div>
-            </li>
-          ))}
+          {replies.map((reply) => {
+            const replyAuthorProfile = getProfile(reply.handle);
+            return (
+              <li key={reply.id} className="flex gap-2">
+                <span aria-hidden="true" className="pt-0.5 text-sm text-muted-foreground">
+                  ↳
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <ProfileLink
+                      name={reply.author}
+                      handle={reply.handle}
+                      avatar={replyAuthorProfile?.avatar}
+                      size="sm"
+                      className="font-editorial text-sm text-foreground"
+                    />
+                    {reply.handle === opHandle && <OpBadge />}
+                    <span className="text-xs tracking-wide text-muted-foreground">
+                      {reply.handle} · {reply.time}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[15px] leading-relaxed break-words">{reply.text}</p>
+                </div>
+              </li>
+            );
+          })}
           {!replies.length && <li className="text-sm text-muted-foreground">No replies yet.</li>}
         </ol>
       )}
