@@ -46,6 +46,8 @@ export const getAdminOverview = createServerFn({ method: "POST" }).handler(async
   const { requireAdmin } = await import("./auth.server");
   const { db } = await requireAdmin(getRequest());
   const { mediaUrl } = await import("./cf-env.server");
+  const { ensureReelsStatusColumn } = await import("./lebeho.functions");
+  await ensureReelsStatusColumn(db);
   const [count, users, posts, images, reels, contentReports, thoughtReports] = await Promise.all([
     db
       .prepare("SELECT COUNT(*) AS n FROM profiles WHERE deleted_at IS NULL")

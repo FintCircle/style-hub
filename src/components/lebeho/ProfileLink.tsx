@@ -12,7 +12,7 @@ export function ProfileLink({
   return (
     <Link
       to="/profile/$handle"
-      params={{ handle: handle.slice(1) }}
+      params={{ handle: handle.replace(/^@/, "") }}
       className={className ?? "transition-colors hover:text-primary focus-visible:text-primary"}
     >
       {name}

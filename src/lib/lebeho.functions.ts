@@ -138,6 +138,14 @@ export const listFeed = createServerFn({ method: "POST" })
 
 type Db = NonNullable<ReturnType<typeof import("./cf-env.server").getDb>>;
 
+export async function ensureReelsStatusColumn(db: Db) {
+  try {
+    await db.prepare("ALTER TABLE reels ADD COLUMN status TEXT NOT NULL DEFAULT 'approved'").run();
+  } catch {
+    // Ignore error if column status already exists
+  }
+}
+
 /** Adds images, vote tallies and the viewer's vote to D1 post rows. */
 async function hydratePosts(
   db: Db,
@@ -474,6 +482,7 @@ export const listReels = createServerFn({ method: "POST" }).handler(
     const { viewerFrom } = await import("./auth.server");
     const db = getDb(getRequest());
     if (!db) return { live: false, reels: [] };
+    await ensureReelsStatusColumn(db);
     const viewer = await viewerFrom(getRequest()).catch(() => null);
     const { results } = await db
       .prepare(
@@ -541,6 +550,7 @@ export const getPublicProfile = createServerFn({ method: "POST" })
       const db = getDb(getRequest());
       const empty = { profile: null, posts: [], thoughts: [], reels: [] };
       if (!db) return { live: false, ...empty };
+      await ensureReelsStatusColumn(db);
 
       const username = data.handle.replace(/^@/, "").toLowerCase();
       const row = await db
