@@ -16,8 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ProfileLink } from "./ProfileLink";
 import { useRequireAccount } from "@/hooks/use-viewer";
-import type { Post, Reply, Thought } from "@/lib/lebeho-data";
-import { me } from "@/lib/lebeho-data";
+import type { Post, Reply, Thought } from "@/lib/types";
 import {
   addThought,
   addThoughtReply,
@@ -213,7 +212,6 @@ function Conversation({
 
 type ThoughtsProps = {
   post: Post;
-  /** Live posts persist every action to D1; sample posts keep changes in local state. */
   live?: boolean;
   viewerHandle?: string;
   boostedThoughtIds?: string[];
@@ -239,7 +237,7 @@ export function Thoughts({
   const thoughts = live ? post.thoughts : localThoughts;
   const boostedIds = live ? new Set(liveBoostedIds) : localBoostedIds;
   const thoughtsClosed = live ? (post.thoughtsClosed ?? false) : localClosed;
-  const myHandle = live ? viewerHandle : me.handle;
+  const myHandle = viewerHandle;
   const isOp = Boolean(myHandle) && post.handle === myHandle;
   const visibleThoughts = thoughts.filter((thought) => !thought.isHidden);
 
@@ -282,8 +280,8 @@ export function Thoughts({
     if (live) return runLive(() => addThoughtReply({ data: { thoughtId, text } }));
     const reply: Reply = {
       id: `reply-${Date.now()}`,
-      author: me.name,
-      handle: me.handle,
+      author: myHandle ?? "Member",
+      handle: myHandle ?? "@member",
       time: "now",
       text,
     };
@@ -313,8 +311,8 @@ export function Thoughts({
       ...current,
       {
         id: `thought-${Date.now()}`,
-        author: me.name,
-        handle: me.handle,
+        author: myHandle ?? "Member",
+        handle: myHandle ?? "@member",
         time: "now",
         text,
         boosts: 0,

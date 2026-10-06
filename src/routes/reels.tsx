@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Heart, Play, Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
-import type { Reel } from "@/lib/lebeho-data";
+import type { Reel } from "@/lib/types";
 import { useReels } from "@/hooks/use-feed";
 import { useRequireAccount } from "@/hooks/use-viewer";
 import { setReelLiked } from "@/lib/lebeho.functions";

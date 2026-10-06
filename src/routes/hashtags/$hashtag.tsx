@@ -3,34 +3,30 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { PostCard } from "@/components/lebeho/PostCard";
-import { getHashtag, getHashtagPosts } from "@/lib/lebeho-data";
 import { getHashtagPage } from "@/lib/lebeho.functions";
 
 export const Route = createFileRoute("/hashtags/$hashtag")({
   loader: ({ params }) => {
-    const hashtag = getHashtag(params.hashtag);
     return {
-      hashtag,
-      posts: hashtag ? getHashtagPosts(hashtag.slug) : [],
       slug: params.hashtag,
     };
   },
   head: ({ loaderData }) => ({
     meta: [
       {
-        title: `Explore #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "fashion"} Fashion Posts | LeBeHo`,
+        title: `Explore #${loaderData?.slug ?? "fashion"} Fashion Posts | LeBeHo`,
       },
       {
         name: "description",
-        content: `Explore honest outfit advice, style conversations, and fashion inspiration tagged #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "fashion"} on LeBeHo.`,
+        content: `Explore honest outfit advice, style conversations, and fashion inspiration tagged #${loaderData?.slug ?? "fashion"} on LeBeHo.`,
       },
       {
         property: "og:title",
-        content: `Explore #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "fashion"} Fashion Posts | LeBeHo`,
+        content: `Explore #${loaderData?.slug ?? "fashion"} Fashion Posts | LeBeHo`,
       },
       {
         property: "og:description",
-        content: `Find fashion conversations and style inspiration from the LeBeHo community under #${loaderData?.hashtag?.name ?? loaderData?.slug ?? "fashion"}.`,
+        content: `Find fashion conversations and style inspiration from the LeBeHo community under #${loaderData?.slug ?? "fashion"}.`,
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -40,14 +36,14 @@ export const Route = createFileRoute("/hashtags/$hashtag")({
 });
 
 function HashtagPage() {
-  const { hashtag: sampleHashtag, posts: samplePosts, slug } = Route.useLoaderData();
+  const { slug } = Route.useLoaderData();
   const query = useQuery({
     queryKey: ["hashtag", slug],
     queryFn: () => getHashtagPage({ data: { slug } }),
     enabled: Boolean(slug),
   });
-  const hashtag = query.data?.live ? query.data.hashtag : sampleHashtag;
-  const posts = query.data?.live ? query.data.posts : samplePosts;
+  const hashtag = query.data?.hashtag;
+  const posts = query.data?.posts ?? [];
   const hashtagName = hashtag?.name ?? slug;
 
   return (

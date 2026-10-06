@@ -7,7 +7,6 @@ import { ProfileActivity, ProfileStats } from "@/components/lebeho/ProfileActivi
 import { AboutContent } from "@/components/lebeho/AboutContent";
 import { useViewer } from "@/hooks/use-viewer";
 import { getPublicProfile } from "@/lib/lebeho.functions";
-import { getProfile, posts, reels } from "@/lib/lebeho-data";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -20,28 +19,13 @@ import {
 export const Route = createFileRoute("/profile/$handle")({
   loader: async ({ params }) => {
     const result = await getPublicProfile({ data: { handle: params.handle } });
-    if (result.live) {
-      if (!result.profile) throw notFound();
-      return { ...result, profile: result.profile };
-    }
-    const profile = getProfile(params.handle);
-    if (!profile) throw notFound();
+    if (!result.profile) throw notFound();
     return {
-      live: false,
-      profile,
-      posts: posts.filter((post) => post.handle === profile.handle),
-      thoughts: posts.flatMap((post) =>
-        post.thoughts
-          .filter((thought) => thought.handle === profile.handle)
-          .map((thought) => ({
-            id: thought.id,
-            text: thought.text,
-            time: thought.time,
-            postId: post.id,
-            postAuthor: post.author,
-          })),
-      ),
-      reels: reels.filter((reel) => reel.handle === profile.handle),
+      live: result.live,
+      profile: result.profile,
+      posts: result.posts,
+      thoughts: result.thoughts,
+      reels: result.reels,
     };
   },
   head: ({ loaderData }) => ({
