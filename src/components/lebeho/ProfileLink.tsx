@@ -9,10 +9,11 @@ export function ProfileLink({
   handle: string;
   className?: string;
 }) {
+  const cleanHandle = handle.replace(/^@/, "");
   return (
     <Link
       to="/profile/$handle"
-      params={{ handle: handle.slice(1) }}
+      params={{ handle: cleanHandle }}
       className={className ?? "transition-colors hover:text-primary focus-visible:text-primary"}
     >
       {name}
