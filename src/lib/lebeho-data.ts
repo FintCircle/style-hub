@@ -227,6 +227,8 @@ export type Reel = {
   /** R2 video URL for live reels. */
   video?: string;
   likedByViewer?: boolean;
+  /** Live reels: pending until LeBeHo reviews them. */
+  status?: "pending" | "approved" | "rejected";
 };
 
 export const reels: Reel[] = [

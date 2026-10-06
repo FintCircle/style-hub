@@ -92,6 +92,34 @@ export async function requireViewer(request: Request) {
   return viewer;
 }
 
+/** Signed-in viewer who is allowed to upload or create content (not restricted by admin). */
+export async function requireCreator(request: Request) {
+  const viewer = await requireViewer(request);
+  if (Number((viewer.profile as ProfileRow & { is_restricted?: number }).is_restricted ?? 0)) {
+    throw new Error("Your account is restricted from creating content on LeBeHo.");
+  }
+  return viewer;
+}
+
+export const ADMIN_EMAIL = "mderrickm00@gmail.com";
+
+/** Cheap check for UI (header button): the profile email recorded from Clerk. */
+export function isAdminProfile(row: ProfileRow) {
+  return ((row as ProfileRow & { email?: string | null }).email ?? "").toLowerCase() === ADMIN_EMAIL;
+}
+
+/** Admin actions: re-verifies against Clerk that the account owns the admin email (verified). */
+export async function requireAdmin(request: Request) {
+  const viewer = await requireViewer(request);
+  const clerk = createClerkClient({ secretKey: getClerkSecret()! });
+  const user = await clerk.users.getUser(viewer.profile.clerk_user_id);
+  const ok = user.emailAddresses.some(
+    (e) => e.emailAddress.toLowerCase() === ADMIN_EMAIL && e.verification?.status === "verified",
+  );
+  if (!ok) throw new Error("Admins only.");
+  return viewer;
+}
+
 export function toPublicProfile(row: ProfileRow) {
   return {
     id: row.id,

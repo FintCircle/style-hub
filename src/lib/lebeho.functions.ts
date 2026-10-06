@@ -31,11 +31,16 @@ type PostRow = {
 
 /** Current viewer's D1 profile; creates it on first sign-in. */
 export const getViewer = createServerFn({ method: "POST" }).handler(async () => {
-  const { viewerFrom, toPublicProfile } = await import("./auth.server");
+  const { viewerFrom, toPublicProfile, isAdminProfile } = await import("./auth.server");
   const { getDb } = await import("./cf-env.server");
-  if (!getDb(getRequest())) return { live: false as const, profile: null };
+  if (!getDb(getRequest())) return { live: false as const, profile: null, isAdmin: false, restricted: false };
   const viewer = await viewerFrom(getRequest());
-  return { live: true as const, profile: viewer ? toPublicProfile(viewer.profile) : null };
+  return {
+    live: true as const,
+    profile: viewer ? toPublicProfile(viewer.profile) : null,
+    isAdmin: viewer ? isAdminProfile(viewer.profile) : false,
+    restricted: Boolean(Number((viewer?.profile as { is_restricted?: number } | undefined)?.is_restricted ?? 0)),
+  };
 });
 
 export const searchHashtags = createServerFn({ method: "POST" })
@@ -274,7 +279,7 @@ const createPostSchema = z.object({
 export const createPost = createServerFn({ method: "POST" })
   .inputValidator((input: z.input<typeof createPostSchema>) => createPostSchema.parse(input))
   .handler(async ({ data }) => {
-    const { requireViewer } = await import("./auth.server");
+    const { requireCreator: requireViewer } = await import("./auth.server");
     const { db, profile } = await requireViewer(getRequest());
     if (!data.text && !data.mediaIds.length) throw new Error("Write something or add a photo.");
 
@@ -402,7 +407,7 @@ export const createReel = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data }) => {
-    const { requireViewer } = await import("./auth.server");
+    const { requireCreator: requireViewer } = await import("./auth.server");
     const { db, profile } = await requireViewer(getRequest());
     const media = await db
       .prepare("SELECT 1 FROM media WHERE id = ? AND owner_id = ? AND kind = 'video' AND status = 'ready'")
@@ -411,7 +416,7 @@ export const createReel = createServerFn({ method: "POST" })
     if (!media) throw new Error("Reel video not found.");
     const id = crypto.randomUUID();
     await db
-      .prepare("INSERT INTO reels (id, author_id, video_media_id, caption, duration_ms) VALUES (?, ?, ?, ?, ?)")
+      .prepare("INSERT INTO reels (id, author_id, video_media_id, caption, duration_ms, status) VALUES (?, ?, ?, ?, ?, 'pending')")
       .bind(id, profile.id, data.videoMediaId, data.caption, data.durationMs)
       .run();
     return { id };
@@ -425,14 +430,14 @@ export const listReels = createServerFn({ method: "POST" }).handler(
     if (!db) return { live: false, reels: [] };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
     const { results } = await db
-      .prepare(`${REEL_SELECT} WHERE r.deleted_at IS NULL ORDER BY r.created_at DESC LIMIT 40`)
+      .prepare(`${REEL_SELECT} WHERE r.deleted_at IS NULL AND r.status = 'approved' ORDER BY r.created_at DESC LIMIT 40`)
       .bind(viewer?.profile.id ?? "")
       .all<ReelRow>();
     return { live: true, reels: results.map((r) => toReel(r, mediaUrl)) };
   },
 );
 
-const REEL_SELECT = `SELECT r.id, r.caption, r.duration_ms, pr.display_name, pr.username, v.r2_key AS video_key,
+const REEL_SELECT = `SELECT r.id, r.status, r.caption, r.duration_ms, pr.display_name, pr.username, v.r2_key AS video_key,
   pm.r2_key AS poster_key,
   (SELECT COUNT(*) FROM reel_likes l WHERE l.reel_id = r.id) AS likes,
   (SELECT COUNT(*) FROM reel_likes l WHERE l.reel_id = r.id AND l.user_id = ?) AS mine
@@ -451,11 +456,13 @@ function toReel(r: ReelRow, mediaUrl: (key: string | null | undefined) => string
     likes: Number(r.likes),
     likedByViewer: Boolean(r.mine),
     duration: `0:${String(secs).padStart(2, "0")}`,
+    status: (r.status ?? "approved") as Reel["status"],
   };
 }
 
 type ReelRow = {
   id: string;
+  status?: string;
   caption: string;
   duration_ms: number;
   display_name: string;
@@ -501,7 +508,7 @@ export const getPublicProfile = createServerFn({ method: "POST" })
             `SELECT
               (SELECT COUNT(*) FROM posts WHERE author_id = ?1 AND deleted_at IS NULL) AS posts,
               (SELECT COUNT(*) FROM thoughts WHERE author_id = ?1 AND deleted_at IS NULL AND is_hidden = 0) AS thoughts,
-              (SELECT COUNT(*) FROM reels WHERE author_id = ?1 AND deleted_at IS NULL) AS reels,
+              (SELECT COUNT(*) FROM reels WHERE author_id = ?1 AND deleted_at IS NULL AND status = 'approved') AS reels,
               (SELECT COUNT(*) FROM reel_likes l JOIN reels r ON r.id = l.reel_id
                 WHERE r.author_id = ?1 AND r.deleted_at IS NULL) AS likes,
               (SELECT COUNT(*) FROM thought_boosts b JOIN thoughts t ON t.id = b.thought_id
@@ -524,9 +531,9 @@ export const getPublicProfile = createServerFn({ method: "POST" })
           .all<{ id: string; body: string; created_at: string; post_id: string; op_name: string }>(),
         db
           .prepare(
-            `${REEL_SELECT} WHERE r.deleted_at IS NULL AND r.author_id = ? ORDER BY r.created_at DESC LIMIT 40`,
+            `${REEL_SELECT} WHERE r.deleted_at IS NULL AND r.author_id = ? AND (r.status = 'approved' OR r.author_id = ?) ORDER BY r.created_at DESC LIMIT 40`,
           )
-          .bind(viewerId, authorId)
+          .bind(viewerId, authorId, viewerId)
           .all<ReelRow>(),
       ]);
 

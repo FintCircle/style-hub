@@ -26,6 +26,7 @@ export const Route = createFileRoute("/api/public/media/upload")({
       POST: async ({ request }) => {
         const { getCfEnv, mediaUrl } = await import("@/lib/cf-env.server");
         const { viewerFrom } = await import("@/lib/auth.server");
+        const { requireCreator } = await import("@/lib/auth.server");
         const env = getCfEnv(request);
         if (!env.DB || !env.MEDIA) {
           console.error("Missing Worker bindings", { DB: Boolean(env.DB), MEDIA: Boolean(env.MEDIA) });
@@ -37,6 +38,11 @@ export const Route = createFileRoute("/api/public/media/upload")({
 
         const viewer = await viewerFrom(request);
         if (!viewer) return json({ error: "Please sign in to upload." }, 401);
+        try {
+          await requireCreator(request);
+        } catch (error) {
+          return json({ error: (error as Error).message }, 403);
+        }
 
         const kind = new URL(request.url).searchParams.get("kind") as keyof typeof LIMITS | null;
         if (!kind || !(kind in LIMITS)) return json({ error: "Unknown upload type." }, 400);
