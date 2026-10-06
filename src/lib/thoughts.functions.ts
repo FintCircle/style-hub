@@ -6,9 +6,9 @@ const id = z.string().min(1).max(64);
 const body = z.string().trim().min(1).max(1000);
 
 /** Every action resolves the actor from the verified Clerk session, never from input. */
-async function actor() {
-  const { requireViewer } = await import("./auth.server");
-  const { db, profile } = await requireViewer(getRequest());
+async function actor(creating = false) {
+  const { requireViewer, requireCreator } = await import("./auth.server");
+  const { db, profile } = await (creating ? requireCreator : requireViewer)(getRequest());
   return { db, clerkUserId: profile.clerk_user_id };
 }
 
@@ -18,7 +18,7 @@ export const addThought = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { createThought } = await import("../server/thoughts");
-    const { db, clerkUserId } = await actor();
+    const { db, clerkUserId } = await actor(true);
     return { id: await createThought(db, clerkUserId, data.postId, data.text) };
   });
 
@@ -28,7 +28,7 @@ export const addThoughtReply = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     const { createThoughtReply } = await import("../server/thoughts");
-    const { db, clerkUserId } = await actor();
+    const { db, clerkUserId } = await actor(true);
     return { id: await createThoughtReply(db, clerkUserId, data.thoughtId, data.text) };
   });
 
