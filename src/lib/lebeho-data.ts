@@ -100,5 +100,4 @@ export type Profile = {
   avatar?: string;
   stats?: { posts: number; thoughts: number; reels: number; likes: number; boosts: number };
 };
-EOF
 
