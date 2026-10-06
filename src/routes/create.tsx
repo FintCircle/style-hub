@@ -150,8 +150,8 @@ function Create() {
         const video = await uploadMedia(reel.file, "video", durationMs);
         await createReel({ data: { videoMediaId: video.id, caption: text, durationMs: Math.max(1, Math.round(durationMs)) } });
         queryClient.invalidateQueries({ queryKey: ["reels"] });
-        toast.success("Your reel is live.");
-        navigate({ to: "/reels" });
+        toast.success("Reel sent for review. It goes live once LeBeHo approves it.");
+        navigate({ to: "/profile" });
         return;
       }
       const voteChoices = choices.map((c) => c.trim()).filter(Boolean);
@@ -450,6 +450,10 @@ function Create() {
               placeholder="Add a caption…"
               className="mt-5 w-full border-b border-border bg-transparent pb-3 text-[15px] outline-none placeholder:text-muted-foreground"
             />
+            <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
+              Every reel is reviewed by LeBeHo before it goes live. You'll see it as pending on your
+              profile until it's approved.
+            </p>
           </div>
         )}
 

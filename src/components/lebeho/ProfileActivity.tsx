@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { PostCard } from "@/components/lebeho/PostCard";
 import type { Post, Profile, ProfileThought, Reel } from "@/lib/lebeho-data";
@@ -96,8 +97,14 @@ export function ProfileActivity({
             {tab === "Reels" &&
               (reels.length ? (
                 <div className="grid grid-cols-3 gap-1 px-1 py-8">
-                  {reels.map((reel) =>
-                    reel.poster ? (
+                  {reels.map((reel) => (
+                    <div key={reel.id} className="relative">
+                    {reel.status === "pending" && (
+                      <span className="absolute left-1.5 top-1.5 z-10 flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em]">
+                        <Clock className="size-3" /> Pending
+                      </span>
+                    )}
+                    {reel.poster ? (
                       <img
                         key={reel.id}
                         src={reel.poster}
@@ -115,8 +122,9 @@ export function ProfileActivity({
                         aria-label={reel.caption || `Reel by ${reel.creator}`}
                         className="aspect-[9/16] w-full bg-muted object-cover"
                       />
-                    ),
-                  )}
+                    )}
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <Empty>No reels yet.</Empty>

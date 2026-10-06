@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useClerk } from "@clerk/clerk-react";
 import { PortalLink } from "./PortalLink";
 import { useViewer } from "@/hooks/use-viewer";
-import { Menu, Timer } from "lucide-react";
+import { Menu, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -22,7 +22,7 @@ const menuItems = [
 ] as const;
 
 export function FeedHeader() {
-  const { isSignedIn, profile } = useViewer();
+  const { isSignedIn, profile, isAdmin } = useViewer();
   const { signOut } = useClerk();
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 px-5 py-3 backdrop-blur-xl">
@@ -38,6 +38,13 @@ export function FeedHeader() {
           LeBeHo
         </Link>
 
+        {isAdmin && (
+          <Button asChild variant="ghost" size="icon" className="absolute right-10 rounded-full" title="Admin">
+            <Link to="/admin" aria-label="Open admin area">
+              <ShieldCheck className="size-5" strokeWidth={1.5} />
+            </Link>
+          </Button>
+        )}
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="justify-self-end rounded-full" aria-label="Open menu">
