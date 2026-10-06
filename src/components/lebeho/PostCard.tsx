@@ -20,7 +20,12 @@ export function PostCard({ post }: { post: Post }) {
             <ProfileLink name={post.author} handle={post.handle} />
           </h3>
           <p className="mt-1 text-xs tracking-wide text-muted-foreground">
-            {post.handle} ·{" "}
+            <ProfileLink
+              name={post.handle}
+              handle={post.handle}
+              className="hover:text-foreground hover:underline"
+            />{" "}
+            ·{" "}
             <Link
               to="/posts/$postId"
               params={{ postId: post.id }}

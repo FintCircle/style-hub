@@ -3,7 +3,15 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function InfoPage({ eyebrow, title, children }: { eyebrow: string; title: string; children: ReactNode }) {
+export function InfoPage({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <main className="min-h-screen bg-background">
       <header className="border-b border-border px-5 py-3">
@@ -13,13 +21,19 @@ export function InfoPage({ eyebrow, title, children }: { eyebrow: string; title:
               <ArrowLeft className="size-5" strokeWidth={1.5} />
             </Link>
           </Button>
-          <Link to="/" className="justify-self-center font-editorial text-2xl">LeBeHo</Link>
+          <Link to="/" className="justify-self-center font-editorial text-2xl">
+            LeBeHo
+          </Link>
         </div>
       </header>
       <article className="mx-auto max-w-3xl px-5 py-12 sm:py-20">
         <p className="text-[11px] uppercase text-muted-foreground">{eyebrow}</p>
-        <h1 className="mt-5 max-w-2xl font-editorial text-5xl leading-tight sm:text-7xl">{title}</h1>
-        <div className="mt-12 max-w-2xl space-y-10 text-[17px] leading-8 sm:text-lg">{children}</div>
+        <h1 className="mt-5 max-w-2xl font-editorial text-5xl leading-tight sm:text-7xl">
+          {title}
+        </h1>
+        <div className="mt-12 max-w-2xl space-y-10 text-[17px] leading-8 sm:text-lg">
+          {children}
+        </div>
       </article>
     </main>
   );

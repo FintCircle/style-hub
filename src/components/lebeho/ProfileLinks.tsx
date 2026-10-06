@@ -64,7 +64,11 @@ function websiteHref(value: string) {
 export function ProfileLinks({ website, instagram, tiktok, x }: ProfileLinksProps) {
   const items: LinkItem[] = [];
   if (website?.trim())
-    items.push({ label: "Website", href: websiteHref(website), icon: <Globe className={iconClass} /> });
+    items.push({
+      label: "Website",
+      href: websiteHref(website),
+      icon: <Globe className={iconClass} />,
+    });
   if (instagram?.trim())
     items.push({
       label: "Instagram",

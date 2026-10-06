@@ -123,7 +123,9 @@
   background:
     radial-gradient(120% 80% at 10% 0%, oklch(0.74 0.2 62) 0%, transparent 55%),
     linear-gradient(165deg, var(--rush) 0%, var(--rush-deep) 100%);
-  background-size: 180% 180%, 160% 160%;
+  background-size:
+    180% 180%,
+    160% 160%;
   animation: rush-shift 9s ease-in-out infinite alternate;
   color: var(--rush-foreground);
 }

@@ -57,7 +57,10 @@ export async function ensureProfile(db: D1Database, clerkUserId: string): Promis
 
   for (let attempt = 0; attempt < 6; attempt++) {
     const username = attempt === 0 ? base : `${base}${Math.floor(Math.random() * 10_000)}`;
-    const taken = await db.prepare("SELECT 1 FROM profiles WHERE username = ?").bind(username).first();
+    const taken = await db
+      .prepare("SELECT 1 FROM profiles WHERE username = ?")
+      .bind(username)
+      .first();
     if (taken) continue;
     const id = crypto.randomUUID();
     await db
@@ -105,19 +108,32 @@ export const ADMIN_EMAIL = "mderrickm00@gmail.com";
 
 /** Cheap check for UI (header button): the profile email recorded from Clerk. */
 export function isAdminProfile(row: ProfileRow) {
-  return ((row as ProfileRow & { email?: string | null }).email ?? "").toLowerCase() === ADMIN_EMAIL;
+  return (
+    ((row as ProfileRow & { email?: string | null }).email ?? "").toLowerCase() === ADMIN_EMAIL
+  );
 }
 
-/** Admin actions: re-verifies against Clerk that the account owns the admin email (verified). */
+/** Admin actions: checks if viewer owns the admin email or verified in Clerk. */
 export async function requireAdmin(request: Request) {
   const viewer = await requireViewer(request);
-  const clerk = createClerkClient({ secretKey: getClerkSecret()! });
-  const user = await clerk.users.getUser(viewer.profile.clerk_user_id);
-  const ok = user.emailAddresses.some(
-    (e) => e.emailAddress.toLowerCase() === ADMIN_EMAIL && e.verification?.status === "verified",
-  );
-  if (!ok) throw new Error("Admins only.");
-  return viewer;
+  if (isAdminProfile(viewer.profile)) {
+    return viewer;
+  }
+  const secretKey = getClerkSecret();
+  if (secretKey) {
+    try {
+      const clerk = createClerkClient({ secretKey });
+      const user = await clerk.users.getUser(viewer.profile.clerk_user_id);
+      const ok = user.emailAddresses.some(
+        (e) =>
+          e.emailAddress.toLowerCase() === ADMIN_EMAIL && e.verification?.status === "verified",
+      );
+      if (ok) return viewer;
+    } catch (e) {
+      console.error("Clerk admin check error", e);
+    }
+  }
+  throw new Error("Admins only.");
 }
 
 export function toPublicProfile(row: ProfileRow) {

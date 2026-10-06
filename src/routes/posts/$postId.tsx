@@ -125,7 +125,12 @@ function PostView({ post, children }: { post: Post; children: React.ReactNode })
               <ProfileLink name={post.author} handle={post.handle} />
             </h1>
             <p className="mt-1 text-xs tracking-wide text-muted-foreground">
-              {post.handle} · {post.time}
+              <ProfileLink
+                name={post.handle}
+                handle={post.handle}
+                className="hover:text-foreground hover:underline"
+              />{" "}
+              · {post.time}
             </p>
           </div>
           {live && (
@@ -134,9 +139,7 @@ function PostView({ post, children }: { post: Post; children: React.ReactNode })
             </span>
           )}
         </header>
-        {post.text && (
-          <p className="mt-5 text-[18px] leading-relaxed break-words">{post.text}</p>
-        )}
+        {post.text && <p className="mt-5 text-[18px] leading-relaxed break-words">{post.text}</p>}
         {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-4" />}
         <PostImageGallery images={post.images} author={post.author} />
         {post.vote && (

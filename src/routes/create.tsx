@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { FileVideo, ImagePlus, Timer, Plus, Upload, X } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query"; 
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { AccountGate } from "@/components/lebeho/AccountGate";
+import { useViewer } from "@/hooks/use-viewer";
 import { uploadMedia, videoDuration } from "@/lib/account";
 import { createPost, createReel, searchHashtags } from "@/lib/lebeho.functions";
 import { normalizeHashtag } from "@/lib/types";
@@ -48,6 +49,7 @@ type MediaPreview = {
 
 function Create() {
   const navigate = useNavigate();
+  const viewer = useViewer();
   const [mode, setMode] = useState<"post" | "reel">("post");
   const [text, setText] = useState("");
   const [withVote, setWithVote] = useState(false);
@@ -73,7 +75,9 @@ function Create() {
     enabled: normalizedHashtag.length > 0,
   });
   const matchingHashtags = hashtagSearch.data?.hashtags ?? [];
-  const canCreateHashtag = Boolean(normalizedHashtag) && !matchingHashtags.some((hashtag) => hashtag.slug === normalizedHashtag);
+  const canCreateHashtag =
+    Boolean(normalizedHashtag) &&
+    !matchingHashtags.some((hashtag) => hashtag.slug === normalizedHashtag);
 
   function selectHashtag(slug: string) {
     setSelectedHashtag(slug);
@@ -148,7 +152,13 @@ function Create() {
         const durationMs = await videoDuration(reel.file);
         if (durationMs > 60_000) throw new Error("Reels can be up to 60 seconds.");
         const video = await uploadMedia(reel.file, "video", durationMs);
-        await createReel({ data: { videoMediaId: video.id, caption: text, durationMs: Math.max(1, Math.round(durationMs)) } });
+        await createReel({
+          data: {
+            videoMediaId: video.id,
+            caption: text,
+            durationMs: Math.max(1, Math.round(durationMs)),
+          },
+        });
         queryClient.invalidateQueries({ queryKey: ["reels"] });
         toast.success("Reel sent for review. It goes live once LeBeHo approves it.");
         navigate({ to: "/profile" });
@@ -158,7 +168,9 @@ function Create() {
       if (withVote && voteChoices.length < 2) throw new Error("Add at least two vote choices.");
       const uploaded = [];
       for (const photo of photos) uploaded.push(await uploadMedia(photo.file, "image"));
-      const hashtagName = hashtagSearch.data?.hashtags.find((h) => h.slug === selectedHashtag)?.name ?? selectedHashtag;
+      const hashtagName =
+        hashtagSearch.data?.hashtags.find((h) => h.slug === selectedHashtag)?.name ??
+        selectedHashtag;
       await createPost({
         data: {
           text,
@@ -202,6 +214,16 @@ function Create() {
       </header>
 
       <div className="mx-auto max-w-xl px-5 py-7">
+        {viewer.restricted && (
+          <div className="mb-6 rounded-2xl border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+            <p className="text-xs uppercase font-semibold tracking-wider">Account Restricted</p>
+            <p className="mt-1 text-sm">
+              Your account has been restricted by an administrator from creating new posts,
+              thoughts, or reels.
+            </p>
+          </div>
+        )}
+
         <div className="flex gap-2">
           {(["post", "reel"] as const).map((m) => (
             <button
@@ -286,13 +308,13 @@ function Create() {
                   </p>
                 </div>
                 {selectedHashtag && (
-              <button
-                type="button"
-                onClick={() => setSelectedHashtag(undefined)}
-                className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
-              >
-                #{selectedHashtag} ×
-              </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedHashtag(undefined)}
+                    className="rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    #{selectedHashtag} ×
+                  </button>
                 )}
               </div>
               {!selectedHashtag && (
@@ -462,7 +484,7 @@ function Create() {
         <button
           type="button"
           onClick={publish}
-          disabled={publishing}
+          disabled={publishing || viewer.restricted}
           className="mt-8 w-full rounded-full bg-primary py-4 text-[11px] uppercase tracking-[0.25em] text-primary-foreground disabled:opacity-60"
         >
           <Upload className="mr-2 inline size-3.5" strokeWidth={1.75} />
@@ -474,7 +496,6 @@ function Create() {
                 ? `Post to Rush Hour`
                 : "Post to Feed"}
         </button>
-
       </div>
 
       <BottomNav />

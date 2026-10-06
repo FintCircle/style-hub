@@ -90,12 +90,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { name: "theme-color", content: "#f5f1e9" },
       { name: "robots", content: "index, follow, max-image-preview:large" },
-      { name: "keywords", content: "fashion community, style advice, outfit advice, fashion social network, fashion reels" },
+      {
+        name: "keywords",
+        content:
+          "fashion community, style advice, outfit advice, fashion social network, fashion reels",
+      },
       { property: "og:site_name", content: "LeBeHo" },
       { property: "og:title", content: "LeBeHo — Let’s Be Honest About Fashion" },
       {
         property: "og:description",
-        content: "Honest fashion advice, outfit conversations, and style discovery in one community.",
+        content:
+          "Honest fashion advice, outfit conversations, and style discovery in one community.",
       },
       { property: "og:type", content: "website" },
       { property: "og:url", content: "/" },
