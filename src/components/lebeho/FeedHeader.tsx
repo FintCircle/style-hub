@@ -27,19 +27,38 @@ export function FeedHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 px-5 py-3 backdrop-blur-xl">
       <div className="relative mx-auto grid max-w-xl grid-cols-[2.5rem_1fr_2.5rem] items-center">
-        <Button asChild variant="ghost" size="icon" className="rounded-full text-rush" title="Rush Hour">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="rounded-full text-rush"
+          title="Rush Hour"
+        >
           <Link to="/rush" aria-label="Open Rush Hour">
-            <span className="absolute size-7 rounded-full border border-rush/30 rush-pulse" aria-hidden="true" />
+            <span
+              className="absolute size-7 rounded-full border border-rush/30 rush-pulse"
+              aria-hidden="true"
+            />
             <Timer className="relative size-5" strokeWidth={1.75} />
           </Link>
         </Button>
 
-        <Link to="/" className="justify-self-center font-editorial text-2xl" aria-label="LeBeHo Feed">
+        <Link
+          to="/"
+          className="justify-self-center font-editorial text-2xl"
+          aria-label="LeBeHo Feed"
+        >
           LeBeHo
         </Link>
 
         {isAdmin && (
-          <Button asChild variant="ghost" size="icon" className="absolute right-10 rounded-full" title="Admin">
+          <Button
+            asChild
+            variant="ghost"
+            size="icon"
+            className="absolute right-10 rounded-full"
+            title="Admin"
+          >
             <Link to="/admin" aria-label="Open admin area">
               <ShieldCheck className="size-5" strokeWidth={1.5} />
             </Link>
@@ -47,7 +66,12 @@ export function FeedHeader() {
         )}
         <Sheet>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="justify-self-end rounded-full" aria-label="Open menu">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="justify-self-end rounded-full"
+              aria-label="Open menu"
+            >
               <Menu className="size-5" strokeWidth={1.5} />
             </Button>
           </SheetTrigger>
@@ -68,6 +92,19 @@ export function FeedHeader() {
                   </Link>
                 </SheetClose>
               ))}
+              {isAdmin && (
+                <SheetClose asChild>
+                  <Link
+                    to="/admin"
+                    className="flex items-baseline justify-between border-b border-border py-5 text-left transition-colors hover:text-rush text-rush"
+                  >
+                    <span className="font-editorial text-2xl">Admin Area</span>
+                    <span className="text-[10px] uppercase font-sans tracking-widest">
+                      Moderation
+                    </span>
+                  </Link>
+                </SheetClose>
+              )}
               {isSignedIn ? (
                 <button
                   type="button"
@@ -88,7 +125,9 @@ export function FeedHeader() {
                 </PortalLink>
               )}
             </nav>
-            <p className="px-7 pb-8 text-xs uppercase text-muted-foreground">Fashion is the conversation.</p>
+            <p className="px-7 pb-8 text-xs uppercase text-muted-foreground">
+              Fashion is the conversation.
+            </p>
           </SheetContent>
         </Sheet>
       </div>

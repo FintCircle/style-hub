@@ -6,8 +6,8 @@ import { useViewer } from "@/hooks/use-viewer";
 import { useTheme, themeLabel, type ThemePreference } from "@/components/lebeho/ThemeProvider";
 import { uploadMedia } from "@/lib/account";
 import { getPublicProfile, updateProfile } from "@/lib/lebeho.functions";
-import { createFileRoute } from "@tanstack/react-router";
-import { Camera, Pencil, Plus } from "lucide-react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { Camera, Pencil, Plus, ShieldCheck } from "lucide-react";
 import { ProfileActivity, ProfileStats } from "@/components/lebeho/ProfileActivity";
 import { AboutContent, AboutEditor } from "@/components/lebeho/AboutContent";
 import { BottomNav } from "@/components/lebeho/BottomNav";
@@ -107,7 +107,9 @@ function Profile() {
     if (!live) return next;
     const avatarMediaId = avatarFile ? (await uploadMedia(avatarFile, "avatar")).id : undefined;
     const { avatar: _a, ...fields } = next;
-    const saved = await updateProfile({ data: { ...fields, ...(avatarMediaId ? { avatarMediaId } : {}) } });
+    const saved = await updateProfile({
+      data: { ...fields, ...(avatarMediaId ? { avatarMediaId } : {}) },
+    });
     setAvatarFile(null);
     queryClient.invalidateQueries({ queryKey: ["viewer"] });
     queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -271,6 +273,27 @@ function Profile() {
           x={profile.x}
         />
 
+        {viewer.isAdmin && (
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-rush/40 bg-rush/5 p-4">
+            <div>
+              <p className="text-sm font-medium text-rush flex items-center gap-1.5">
+                <ShieldCheck className="size-4" /> Admin Controls
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Manage members, content reports, posts, and reels moderation.
+              </p>
+            </div>
+            <Button
+              asChild
+              variant="outline"
+              size="sm"
+              className="border-rush/50 text-rush hover:bg-rush/10"
+            >
+              <Link to="/admin">Open Admin</Link>
+            </Button>
+          </div>
+        )}
+
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4">
           <div>
             <p className="text-sm font-medium">Appearance</p>
@@ -280,7 +303,11 @@ function Profile() {
                 : `${themeLabel(preference)} mode`}
             </p>
           </div>
-          <div className="flex rounded-lg border border-border p-1" role="group" aria-label="Choose appearance">
+          <div
+            className="flex rounded-lg border border-border p-1"
+            role="group"
+            aria-label="Choose appearance"
+          >
             {(["system", "light", "dark"] as ThemePreference[]).map((option) => (
               <button
                 key={option}

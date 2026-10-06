@@ -49,5 +49,7 @@ export function Countdown({ endsAt, className = "" }: { endsAt: number; classNam
       </span>
     );
   }
-  return <span className={"font-rush tabular-nums " + className}>{formatRemaining(remaining)}</span>;
+  return (
+    <span className={"font-rush tabular-nums " + className}>{formatRemaining(remaining)}</span>
+  );
 }

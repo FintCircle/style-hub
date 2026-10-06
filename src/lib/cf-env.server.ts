@@ -70,11 +70,16 @@ function pick(source: unknown, key: string): unknown {
 export function getCfEnv(request?: Request): CfEnv {
   const g = globalThis as AnyRecord;
   const req = request as unknown as
-    | { runtime?: { cloudflare?: { env?: AnyRecord } }; env?: AnyRecord }
-    | undefined;
+    { runtime?: { cloudflare?: { env?: AnyRecord } }; env?: AnyRecord } | undefined;
   const sources = [workersEnv, req?.runtime?.cloudflare?.env, req?.env, g["__env__"], g[KEY]];
   const out: AnyRecord = {};
-  for (const key of ["DB", "MEDIA", "CLERK_SECRET_KEY", "CLERK_WEBHOOK_SECRET", "MEDIA_PUBLIC_URL"]) {
+  for (const key of [
+    "DB",
+    "MEDIA",
+    "CLERK_SECRET_KEY",
+    "CLERK_WEBHOOK_SECRET",
+    "MEDIA_PUBLIC_URL",
+  ]) {
     for (const s of sources) {
       const v = pick(s, key);
       if (v) {

@@ -43,7 +43,11 @@ export async function uploadMedia(
     headers,
     body: file,
   });
-  const body = (await response.json().catch(() => ({}))) as { id?: string; url?: string; error?: string };
+  const body = (await response.json().catch(() => ({}))) as {
+    id?: string;
+    url?: string;
+    error?: string;
+  };
   if (!response.ok || !body.id) throw new Error(body.error ?? "Upload failed.");
   return { id: body.id, url: body.url ?? "" };
 }
