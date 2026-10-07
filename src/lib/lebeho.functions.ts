@@ -457,25 +457,43 @@ export const castVote = createServerFn({ method: "POST" })
     const { requireViewer } = await import("./auth.server");
     const { db, profile } = await requireViewer(getRequest());
 
-    const post = await db
-      .prepare("SELECT is_vote_closed, vote_ends_at FROM posts WHERE id = ? AND deleted_at IS NULL")
-      .bind(data.postId)
-      .first<{ is_vote_closed: number; vote_ends_at: string | null }>();
-    if (!post) throw new Error("Post not found.");
-    if (post.is_vote_closed) throw new Error("Voting is closed for this post.");
-    if (post.vote_ends_at && new Date(post.vote_ends_at).getTime() <= Date.now()) {
-      throw new Error("Voting period has ended.");
+    const nowIso = new Date().toISOString();
+    // Atomically insert vote ONLY IF the post is open, unexpired, and not deleted, and choice belongs to post
+    const result = (await db
+      .prepare(
+        `INSERT OR IGNORE INTO votes (post_id, user_id, choice_id)
+         SELECT vc.post_id, ?, vc.id
+         FROM vote_choices vc
+         JOIN posts p ON p.id = vc.post_id
+         WHERE vc.id = ? AND vc.post_id = ?
+           AND p.deleted_at IS NULL
+           AND p.is_vote_closed = 0
+           AND (p.vote_ends_at IS NULL OR p.vote_ends_at > ?)`,
+      )
+      .bind(profile.id, data.choiceId, data.postId, nowIso)
+      .run()) as { meta?: { changes?: number }; changes?: number } | undefined;
+
+    const changes = result?.meta?.changes ?? result?.changes ?? 0;
+    if (!changes) {
+      // Check if user already voted or if post is closed/expired
+      const existingVote = await db
+        .prepare("SELECT 1 FROM votes WHERE post_id = ? AND user_id = ?")
+        .bind(data.postId, profile.id)
+        .first();
+      if (existingVote) return { ok: true };
+
+      const post = await db
+        .prepare("SELECT is_vote_closed, vote_ends_at FROM posts WHERE id = ? AND deleted_at IS NULL")
+        .bind(data.postId)
+        .first<{ is_vote_closed: number; vote_ends_at: string | null }>();
+
+      if (!post) throw new Error("Post not found.");
+      if (post.is_vote_closed || (post.vote_ends_at && new Date(post.vote_ends_at).getTime() <= Date.now())) {
+        throw new Error("Voting is closed for this post.");
+      }
+      throw new Error("That choice is no longer available.");
     }
 
-    const choice = await db
-      .prepare("SELECT 1 FROM vote_choices WHERE id = ? AND post_id = ?")
-      .bind(data.choiceId, data.postId)
-      .first();
-    if (!choice) throw new Error("That choice is no longer available.");
-    await db
-      .prepare("INSERT OR IGNORE INTO votes (post_id, user_id, choice_id) VALUES (?, ?, ?)")
-      .bind(data.postId, profile.id, data.choiceId)
-      .run();
     return { ok: true };
   });
 

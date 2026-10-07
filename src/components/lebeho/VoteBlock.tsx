@@ -36,6 +36,8 @@ export function VoteBlock({
         await castVote({ data: { postId, choiceId: id } });
         queryClient.invalidateQueries({ queryKey: ["feed"] });
         queryClient.invalidateQueries({ queryKey: ["profile"] });
+        queryClient.invalidateQueries({ queryKey: ["hashtag"] });
+        queryClient.invalidateQueries({ queryKey: ["hashtags"] });
       } catch (error) {
         setPicked(null);
         toast.error(error instanceof Error ? error.message : "Vote failed.");

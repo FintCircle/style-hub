@@ -30,6 +30,8 @@ export function PostCard({ post }: { post: Post }) {
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
       queryClient.invalidateQueries({ queryKey: ["post", post.id] });
+      queryClient.invalidateQueries({ queryKey: ["hashtag"] });
+      queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not close vote.");
     } finally {
@@ -48,6 +50,8 @@ export function PostCard({ post }: { post: Post }) {
       toast.success("Post deleted.");
       queryClient.invalidateQueries({ queryKey: ["feed"] });
       queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["hashtag"] });
+      queryClient.invalidateQueries({ queryKey: ["hashtags"] });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not delete post.");
     } finally {
