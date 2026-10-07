@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { PostCard } from "@/components/lebeho/PostCard";
+import { LazyPostCard } from "@/components/lebeho/LazyPostCard";
 import type { Post, Profile, ProfileThought, Reel } from "@/lib/types";
 
 const tabs = ["Posts", "Thoughts", "Reels", "About"] as const;
@@ -67,7 +67,9 @@ export function ProfileActivity({
           <>
             {tab === "Posts" &&
               (posts.length ? (
-                posts.map((post) => <PostCard key={post.id} post={post} />)
+                posts.map((post, index) => (
+                  <LazyPostCard key={post.id} post={post} priority={index < 2} />
+                ))
               ) : (
                 <Empty>No posts yet.</Empty>
               ))}

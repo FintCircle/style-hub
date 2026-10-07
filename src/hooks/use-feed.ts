@@ -11,7 +11,7 @@ export function useFeed(options: { rushOnly?: boolean } = {}) {
   });
   const live = query.data?.live ?? false;
   return {
-    posts: live ? query.data!.posts : [],
+    posts: query.data?.posts ?? [],
     live,
     isLoading: query.isLoading,
   };

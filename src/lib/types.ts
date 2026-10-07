@@ -15,6 +15,7 @@ export type Thought = {
   authorId?: string;
   author: string;
   handle: string;
+  authorAvatar?: string;
   text: string;
   time: string;
   /** Community endorsement of useful advice. */
@@ -28,6 +29,7 @@ export type Post = {
   id: string;
   author: string;
   handle: string;
+  authorAvatar?: string;
   time: string;
   text: string;
   images: string[];

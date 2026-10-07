@@ -2,7 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { BottomNav } from "@/components/lebeho/BottomNav";
-import { PostCard } from "@/components/lebeho/PostCard";
+import { LazyPostCard } from "@/components/lebeho/LazyPostCard";
 import { getHashtagPage } from "@/lib/lebeho.functions";
 
 export const Route = createFileRoute("/hashtags/$hashtag")({
@@ -68,7 +68,9 @@ function HashtagPage() {
         {query.isLoading ? (
           <p className="px-5 py-10 text-sm text-muted-foreground">Loading posts…</p>
         ) : posts.length ? (
-          posts.map((post) => <PostCard key={post.id} post={post} />)
+          posts.map((post, index) => (
+            <LazyPostCard key={post.id} post={post} priority={index < 2} />
+          ))
         ) : (
           <p className="px-5 py-10 text-sm text-muted-foreground">No public posts here yet.</p>
         )}

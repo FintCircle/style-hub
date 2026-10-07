@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { useFeed } from "@/hooks/use-feed";
-import { PostCard } from "@/components/lebeho/PostCard";
+import { LazyPostCard } from "@/components/lebeho/LazyPostCard";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { FeedHeader } from "@/components/lebeho/FeedHeader";
 
@@ -36,8 +36,8 @@ function Feed() {
         <p className="px-5 pt-8 text-xs uppercase tracking-[0.3em] text-muted-foreground">
           Discovery
         </p>
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
+        {posts.map((post, index) => (
+          <LazyPostCard key={post.id} post={post} priority={index < 2} />
         ))}
         {live && !isLoading && posts.length === 0 && (
           <div className="px-5 py-16 text-center">

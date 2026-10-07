@@ -10,6 +10,7 @@ import { VoteBlock } from "@/components/lebeho/VoteBlock";
 import { PostImageGallery } from "@/components/lebeho/PostImageGallery";
 import { HashtagLink } from "@/components/lebeho/HashtagLink";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useViewer } from "@/hooks/use-viewer";
 import type { Post } from "@/lib/types";
 import { getPostDetail } from "@/lib/lebeho.functions";
@@ -66,10 +67,9 @@ function LivePost() {
   const query = useQuery({
     queryKey: ["post", postId, isSignedIn ?? false],
     queryFn: () => getPostDetail({ data: { postId } }),
-    enabled: isLoaded,
   });
 
-  if (!isLoaded || query.isLoading) {
+  if (query.isLoading) {
     return (
       <div className="space-y-4 px-5 py-8" aria-busy="true" aria-label="Loading post">
         <Skeleton className="h-7 w-48" />
@@ -119,19 +119,34 @@ function PostView({ post, children }: { post: Post; children: React.ReactNode })
   return (
     <>
       <article className="px-5 py-8">
-        <header className="flex items-baseline justify-between gap-4">
-          <div>
-            <h1 className="font-editorial text-2xl leading-none">
-              <ProfileLink name={post.author} handle={post.handle} />
-            </h1>
-            <p className="mt-1 text-xs tracking-wide text-muted-foreground">
-              <ProfileLink
-                name={post.handle}
-                handle={post.handle}
-                className="hover:text-foreground hover:underline"
-              />{" "}
-              · {post.time}
-            </p>
+        <header className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link to="/profile/$handle" params={{ handle: post.handle }} tabIndex={-1}>
+              <Avatar className="size-10 shrink-0">
+                <AvatarImage
+                  src={post.authorAvatar}
+                  alt={`${post.author}'s avatar`}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <AvatarFallback className="bg-primary font-editorial text-sm text-primary-foreground">
+                  {(post.author || "?")[0]?.toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+            <div>
+              <h1 className="font-editorial text-2xl leading-none">
+                <ProfileLink name={post.author} handle={post.handle} />
+              </h1>
+              <p className="mt-1 text-xs tracking-wide text-muted-foreground">
+                <ProfileLink
+                  name={post.handle}
+                  handle={post.handle}
+                  className="hover:text-foreground hover:underline"
+                />{" "}
+                · {post.time}
+              </p>
+            </div>
           </div>
           {live && (
             <span className="flex items-center gap-1.5 rounded-full border border-rush/50 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-rush">
