@@ -26,6 +26,7 @@ type PostRow = {
   thoughts_closed: number;
   display_name: string;
   username: string;
+  profile_image_url: string | null;
   thought_count: number;
 };
 
@@ -94,6 +95,52 @@ export const getHashtagPage = createServerFn({ method: "POST" })
     };
   });
 
+const SAMPLE_POSTS: Post[] = [
+  {
+    id: "sample-post-1",
+    author: "Elena Rostova",
+    handle: "@elena",
+    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+    time: "2h",
+    text: "Structured tailoring or effortless oversized layering for tonight's gallery opening?",
+    images: ["https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800"],
+    thoughts: [
+      {
+        id: "thought-1",
+        author: "Marcus Chen",
+        handle: "@marcus_stylist",
+        authorAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150",
+        text: "The structured silhouette creates a bolder statement against art space lighting.",
+        time: "1h",
+        boosts: 14,
+        replies: [
+          {
+            id: "reply-1",
+            author: "Elena Rostova",
+            handle: "@elena",
+            text: "That makes sense. Going with the sharp shoulders!",
+            time: "45m",
+          },
+        ],
+      },
+    ],
+    thoughtCount: 1,
+    live: false,
+  },
+  {
+    id: "sample-post-2",
+    author: "Sophia Laurent",
+    handle: "@sophia_style",
+    authorAvatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150",
+    time: "4h",
+    text: "Vintage leather trench vs modern matte finish? Seeking opinions for Autumn collection.",
+    images: ["https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800"],
+    thoughts: [],
+    thoughtCount: 0,
+    live: false,
+  },
+];
+
 /** Discovery feed. `live: false` means no database here (preview) — show samples. */
 export const listFeed = createServerFn({ method: "POST" })
   .inputValidator((input: { rushOnly?: boolean; authorHandle?: string } | undefined) =>
@@ -105,7 +152,7 @@ export const listFeed = createServerFn({ method: "POST" })
     const { getDb, mediaUrl } = await import("./cf-env.server");
     const { viewerFrom } = await import("./auth.server");
     const db = getDb(getRequest());
-    if (!db) return { live: false, posts: [] };
+    if (!db) return { live: false, posts: SAMPLE_POSTS };
     const viewer = await viewerFrom(getRequest()).catch(() => null);
 
     const where = ["p.deleted_at IS NULL"];
@@ -122,7 +169,7 @@ export const listFeed = createServerFn({ method: "POST" })
     const { results: rows } = await db
       .prepare(
         `SELECT p.id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour, p.hashtag_slug,
-          p.thoughts_closed, pr.display_name, pr.username,
+          p.thoughts_closed, pr.display_name, pr.username, pr.profile_image_url,
           (SELECT COUNT(*) FROM thoughts t WHERE t.post_id = p.id AND t.deleted_at IS NULL AND t.is_hidden = 0) AS thought_count
         FROM posts p JOIN profiles pr ON pr.id = p.author_id
         WHERE ${where.join(" AND ")} ORDER BY p.created_at DESC LIMIT 60`,
@@ -180,6 +227,7 @@ async function hydratePosts(
       id: r.id,
       author: r.display_name,
       handle: `@${r.username}`,
+      authorAvatar: mediaUrl(r.profile_image_url) ?? undefined,
       time: relativeTime(r.created_at),
       text: r.body,
       images: images.results.filter((i) => i.post_id === r.id).map((i) => mediaUrl(i.r2_key)!),
@@ -200,7 +248,7 @@ async function hydratePosts(
 }
 
 const POST_SELECT = `SELECT p.id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour, p.hashtag_slug,
-  p.thoughts_closed, pr.display_name, pr.username,
+  p.thoughts_closed, pr.display_name, pr.username, pr.profile_image_url,
   (SELECT COUNT(*) FROM thoughts t WHERE t.post_id = p.id AND t.deleted_at IS NULL AND t.is_hidden = 0) AS thought_count
 FROM posts p JOIN profiles pr ON pr.id = p.author_id`;
 
@@ -216,7 +264,10 @@ export const getPostDetail = createServerFn({ method: "POST" })
       const { getDb, mediaUrl } = await import("./cf-env.server");
       const { viewerFrom } = await import("./auth.server");
       const db = getDb(getRequest());
-      if (!db) return { live: false, post: null, boostedThoughtIds: [] };
+      if (!db) {
+        const sample = SAMPLE_POSTS.find((p) => p.id === data.postId) ?? SAMPLE_POSTS[0] ?? null;
+        return { live: false, post: sample, boostedThoughtIds: [] };
+      }
       const viewer = await viewerFrom(getRequest()).catch(() => null);
       const viewerId = viewer?.profile.id ?? "";
 
@@ -230,7 +281,7 @@ export const getPostDetail = createServerFn({ method: "POST" })
         hydratePosts(db, [row], viewerId || null, mediaUrl),
         db
           .prepare(
-            `SELECT t.id, t.author_id, t.body, t.created_at, pr.display_name, pr.username,
+            `SELECT t.id, t.author_id, t.body, t.created_at, pr.display_name, pr.username, pr.profile_image_url,
               (SELECT COUNT(*) FROM thought_boosts b WHERE b.thought_id = t.id) AS boosts,
               (SELECT COUNT(*) FROM thought_boosts b WHERE b.thought_id = t.id AND b.user_id = ?) AS mine
             FROM thoughts t JOIN profiles pr ON pr.id = t.author_id
@@ -245,6 +296,7 @@ export const getPostDetail = createServerFn({ method: "POST" })
             created_at: string;
             display_name: string;
             username: string;
+            profile_image_url: string | null;
             boosts: number;
             mine: number;
           }>(),
@@ -272,6 +324,7 @@ export const getPostDetail = createServerFn({ method: "POST" })
         authorId: t.author_id,
         author: t.display_name,
         handle: `@${t.username}`,
+        authorAvatar: mediaUrl(t.profile_image_url) ?? undefined,
         text: t.body,
         time: relativeTime(t.created_at),
         boosts: Number(t.boosts),

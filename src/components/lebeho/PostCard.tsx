@@ -7,6 +7,7 @@ import { ProfileLink } from "./ProfileLink";
 import { PostImageGallery } from "./PostImageGallery";
 import { HashtagLink } from "./HashtagLink";
 import { ReportButton } from "./ReportButton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function PostCard({ post }: { post: Post }) {
   const remaining = useCountdown(post.rushEndsAt);
@@ -14,26 +15,41 @@ export function PostCard({ post }: { post: Post }) {
 
   return (
     <article className="border-b border-border px-5 py-8">
-      <header className="flex items-baseline justify-between gap-4">
-        <div>
-          <h3 className="font-editorial text-lg leading-none">
-            <ProfileLink name={post.author} handle={post.handle} />
-          </h3>
-          <p className="mt-1 text-xs tracking-wide text-muted-foreground">
-            <ProfileLink
-              name={post.handle}
-              handle={post.handle}
-              className="hover:text-foreground hover:underline"
-            />{" "}
-            ·{" "}
-            <Link
-              to="/posts/$postId"
-              params={{ postId: post.id }}
-              className="hover:text-foreground hover:underline"
-            >
-              {post.time}
-            </Link>
-          </p>
+      <header className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Link to="/profile/$handle" params={{ handle: post.handle }} tabIndex={-1}>
+            <Avatar className="size-9 shrink-0">
+              <AvatarImage
+                src={post.authorAvatar}
+                alt={`${post.author}'s avatar`}
+                loading="lazy"
+                decoding="async"
+              />
+              <AvatarFallback className="bg-primary font-editorial text-xs text-primary-foreground">
+                {(post.author || "?")[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+          <div>
+            <h3 className="font-editorial text-lg leading-none">
+              <ProfileLink name={post.author} handle={post.handle} />
+            </h3>
+            <p className="mt-1 text-xs tracking-wide text-muted-foreground">
+              <ProfileLink
+                name={post.handle}
+                handle={post.handle}
+                className="hover:text-foreground hover:underline"
+              />{" "}
+              ·{" "}
+              <Link
+                to="/posts/$postId"
+                params={{ postId: post.id }}
+                className="hover:text-foreground hover:underline"
+              >
+                {post.time}
+              </Link>
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {live && (

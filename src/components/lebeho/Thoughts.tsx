@@ -1,5 +1,6 @@
 import { ArrowUp, EyeOff, Flag, MessageCircle, MoreHorizontal, UserRoundX } from "lucide-react";
 import { useState } from "react";
+import { Link } from "@tanstack/react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProfileLink } from "./ProfileLink";
-import { useRequireAccount } from "@/hooks/use-viewer";
+import { useRequireAccount, useViewer } from "@/hooks/use-viewer";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { Post, Reply, Thought } from "@/lib/types";
 import {
   addThought,
@@ -87,16 +89,31 @@ function Conversation({
   return (
     <article className="border border-border bg-card p-4">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs tracking-wide text-muted-foreground">
-            <ProfileLink
-              name={thought.author}
-              handle={thought.handle}
-              className="font-editorial text-base text-foreground"
-            />
-            {thought.handle === opHandle && <OpBadge />} {thought.handle} · {thought.time}
-          </p>
-          <p className="mt-2 text-[15px] leading-relaxed break-words">{thought.text}</p>
+        <div className="flex items-start gap-3 min-w-0">
+          <Link to="/profile/$handle" params={{ handle: thought.handle }} tabIndex={-1}>
+            <Avatar className="size-8 shrink-0">
+              <AvatarImage
+                src={thought.authorAvatar}
+                alt={`${thought.author}'s avatar`}
+                loading="lazy"
+                decoding="async"
+              />
+              <AvatarFallback className="bg-primary font-editorial text-xs text-primary-foreground">
+                {(thought.author || "?")[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
+          <div className="min-w-0">
+            <p className="text-xs tracking-wide text-muted-foreground">
+              <ProfileLink
+                name={thought.author}
+                handle={thought.handle}
+                className="font-editorial text-base text-foreground"
+              />
+              {thought.handle === opHandle && <OpBadge />} {thought.handle} · {thought.time}
+            </p>
+            <p className="mt-2 text-[15px] leading-relaxed break-words">{thought.text}</p>
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <button
@@ -223,6 +240,7 @@ export function Thoughts({
   const [localBoostedIds, setLocalBoostedIds] = useState<Set<string>>(new Set());
   const [localClosed, setLocalClosed] = useState(post.thoughtsClosed ?? false);
   const requireAccount = useRequireAccount();
+  const { profile: viewerProfile } = useViewer();
   const [draft, setDraft] = useState("");
   const [posting, setPosting] = useState(false);
   const [notice, setNotice] = useState("");
@@ -304,8 +322,9 @@ export function Thoughts({
       ...current,
       {
         id: `thought-${Date.now()}`,
-        author: myHandle ?? "Member",
+        author: viewerProfile?.name ?? myHandle ?? "Member",
         handle: myHandle ?? "@member",
+        authorAvatar: viewerProfile?.avatar,
         time: "now",
         text,
         boosts: 0,
