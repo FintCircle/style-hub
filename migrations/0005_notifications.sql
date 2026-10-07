@@ -1,0 +1,15 @@
+-- Notifications schema
+CREATE TABLE IF NOT EXISTS notifications (
+  id TEXT PRIMARY KEY,
+  recipient_id TEXT NOT NULL REFERENCES profiles(id),
+  actor_id TEXT NOT NULL REFERENCES profiles(id),
+  type TEXT NOT NULL CHECK (type IN ('thought', 'thought_reply', 'boost', 'reel_like')),
+  target_type TEXT NOT NULL CHECK (target_type IN ('post', 'reel')),
+  target_id TEXT NOT NULL,
+  thought_id TEXT REFERENCES thoughts(id),
+  is_read INTEGER NOT NULL DEFAULT 0 CHECK (is_read IN (0, 1)),
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS notifications_recipient_idx
+  ON notifications(recipient_id, is_read, created_at DESC);

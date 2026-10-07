@@ -111,15 +111,28 @@ export function PostCard({ post }: { post: Post }) {
         </div>
       </header>
 
-      {post.text && (
-        <Link
-          to="/posts/$postId"
-          params={{ postId: post.id }}
-          className="mt-4 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-        >
-          <p className="text-[17px] leading-relaxed break-words">{post.text}</p>
-        </Link>
-      )}
+      {post.text && (() => {
+        const MAX_TEXT_LENGTH = 180;
+        const isLongText = post.text.length > MAX_TEXT_LENGTH;
+        const displayText = isLongText ? post.text.slice(0, MAX_TEXT_LENGTH).trim() : post.text;
+
+        return (
+          <Link
+            to="/posts/$postId"
+            params={{ postId: post.id }}
+            className="mt-4 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group"
+          >
+            <p className="text-[17px] leading-relaxed break-words">
+              {displayText}
+              {isLongText && (
+                <span className="ml-1 font-medium text-muted-foreground group-hover:text-foreground underline underline-offset-2">
+                  … read more
+                </span>
+              )}
+            </p>
+          </Link>
+        );
+      })()}
       {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-3" />}
 
       <PostImageGallery images={post.images} author={post.author} />

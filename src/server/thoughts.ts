@@ -80,6 +80,17 @@ export async function createThought(
     .prepare("INSERT INTO thoughts (id, post_id, author_id, body) VALUES (?, ?, ?, ?)")
     .bind(thoughtId, postId, actor.id, body.trim())
     .run();
+
+  const { sendNotification } = await import("./notifications");
+  await sendNotification(db, {
+    recipientId: post.author_id,
+    actorId: actor.id,
+    type: "thought",
+    targetType: "post",
+    targetId: postId,
+    thoughtId,
+  });
+
   return thoughtId;
 }
 
@@ -93,18 +104,27 @@ export async function createThoughtReply(
   const participants = await participantForThought(db, thoughtId);
   if (actor.id !== participants.post_author_id && actor.id !== participants.thought_author_id)
     throw new Error("Only conversation participants may reply");
-  await assertNotBlocked(
-    db,
-    actor.id,
+  const otherId =
     actor.id === participants.post_author_id
       ? participants.thought_author_id
-      : participants.post_author_id,
-  );
+      : participants.post_author_id;
+  await assertNotBlocked(db, actor.id, otherId);
   const replyId = id();
   await db
     .prepare("INSERT INTO thought_replies (id, thought_id, author_id, body) VALUES (?, ?, ?, ?)")
     .bind(replyId, thoughtId, actor.id, body.trim())
     .run();
+
+  const { sendNotification } = await import("./notifications");
+  await sendNotification(db, {
+    recipientId: otherId,
+    actorId: actor.id,
+    type: "thought_reply",
+    targetType: "post",
+    targetId: participants.post_id,
+    thoughtId,
+  });
+
   return replyId;
 }
 
@@ -115,12 +135,22 @@ export async function setThoughtBoosted(
   boosted: boolean,
 ) {
   const actor = await profileForClerkUser(db, clerkUserId);
-  await participantForThought(db, thoughtId);
+  const participants = await participantForThought(db, thoughtId);
   if (boosted) {
     await db
       .prepare("INSERT OR IGNORE INTO thought_boosts (thought_id, user_id) VALUES (?, ?)")
       .bind(thoughtId, actor.id)
       .run();
+
+    const { sendNotification } = await import("./notifications");
+    await sendNotification(db, {
+      recipientId: participants.thought_author_id,
+      actorId: actor.id,
+      type: "boost",
+      targetType: "post",
+      targetId: participants.post_id,
+      thoughtId,
+    });
   } else {
     await db
       .prepare("DELETE FROM thought_boosts WHERE thought_id = ? AND user_id = ?")
