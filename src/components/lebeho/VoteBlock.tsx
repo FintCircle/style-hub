@@ -10,12 +10,14 @@ export function VoteBlock({
   variant = "feed",
   postId,
   live = false,
+  isVoteClosed = false,
   viewerVote,
 }: {
   choices: VoteChoice[];
   variant?: "feed" | "rush";
   postId?: string;
   live?: boolean;
+  isVoteClosed?: boolean;
   viewerVote?: string | undefined;
 }) {
   const [picked, setPicked] = useState<string | null>(viewerVote ?? null);
@@ -27,18 +29,23 @@ export function VoteBlock({
   const rush = variant === "rush";
 
   async function choose(id: string) {
-    if (picked || !requireAccount()) return;
+    if (isVoteClosed || picked || !requireAccount()) return;
     setPicked(id);
     if (live && postId) {
       try {
         await castVote({ data: { postId, choiceId: id } });
         queryClient.invalidateQueries({ queryKey: ["feed"] });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        queryClient.invalidateQueries({ queryKey: ["hashtag"] });
+        queryClient.invalidateQueries({ queryKey: ["hashtags"] });
       } catch (error) {
         setPicked(null);
         toast.error(error instanceof Error ? error.message : "Vote failed.");
       }
     }
   }
+
+  const showResults = Boolean(picked || isVoteClosed);
 
   return (
     <div className="mt-4 space-y-2">
@@ -49,12 +56,14 @@ export function VoteBlock({
           <button
             key={c.id}
             type="button"
+            disabled={isVoteClosed}
             onClick={() => choose(c.id)}
             className={
               "relative w-full overflow-hidden rounded-full border px-5 py-3 text-left text-sm transition-colors " +
               (rush
                 ? "border-rush-foreground/40 font-rush uppercase tracking-[0.12em]"
-                : "border-foreground/25 hover:border-foreground/60")
+                : "border-foreground/25 hover:border-foreground/60") +
+              (isVoteClosed ? " cursor-default opacity-90" : "")
             }
           >
             <span
@@ -62,18 +71,29 @@ export function VoteBlock({
                 "absolute inset-y-0 left-0 transition-[width] duration-700 ease-out " +
                 (rush ? "bg-rush-foreground/20" : "bg-foreground/8")
               }
-              style={{ width: picked ? `${pct}%` : "0%" }}
+              style={{ width: showResults ? `${pct}%` : "0%" }}
             />
             <span className="relative flex items-center justify-between gap-3">
               <span className={picked === c.id ? "font-semibold" : ""}>{c.label}</span>
-              {picked && <span className="tabular-nums opacity-70">{pct}%</span>}
+              {showResults && <span className="tabular-nums opacity-70">{pct}%</span>}
             </span>
           </button>
         );
       })}
-      <p className={"pt-1 text-xs " + (rush ? "opacity-80" : "text-muted-foreground")}>
-        {picked ? `${total} votes` : `${total} votes · tap to choose`}
-      </p>
+      <div className="flex items-center justify-between pt-1 text-xs">
+        <p className={rush ? "opacity-80" : "text-muted-foreground"}>
+          {isVoteClosed
+            ? `Final results · ${total} votes`
+            : picked
+              ? `${total} votes`
+              : `${total} votes · tap to choose`}
+        </p>
+        {isVoteClosed && (
+          <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
+            Voting Done
+          </span>
+        )}
+      </div>
     </div>
   );
 }

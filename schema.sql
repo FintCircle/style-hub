@@ -63,6 +63,8 @@ CREATE TABLE IF NOT EXISTS posts (
   is_rush_hour INTEGER NOT NULL DEFAULT 0 CHECK (is_rush_hour IN (0, 1)),
   rush_hour_ends_at TEXT,
   thoughts_closed INTEGER NOT NULL DEFAULT 0 CHECK (thoughts_closed IN (0, 1)),
+  is_vote_closed INTEGER NOT NULL DEFAULT 0 CHECK (is_vote_closed IN (0, 1)),
+  vote_ends_at TEXT,
   hashtag_slug TEXT REFERENCES hashtags(slug),
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
