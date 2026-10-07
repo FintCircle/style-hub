@@ -392,7 +392,9 @@ function Create() {
                   </button>
                 )}
                 <div className="pt-2">
-                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Voting duration</p>
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                    Voting duration
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {[
                       { label: "No limit", value: undefined },

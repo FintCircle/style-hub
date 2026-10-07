@@ -41,7 +41,11 @@ export function PostCard({ post }: { post: Post }) {
 
   async function handleDeletePost() {
     if (deleting) return;
-    if (!window.confirm("Are you sure you want to delete this post? All thoughts left on it will also be deleted.")) {
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this post? All thoughts left on it will also be deleted.",
+      )
+    ) {
       return;
     }
     setDeleting(true);

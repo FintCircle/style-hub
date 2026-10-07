@@ -170,14 +170,18 @@ export const listFeed = createServerFn({ method: "POST" })
     }
 
     // Exclude reported posts that have pending reports in content_reports
-    where.push(`NOT EXISTS (SELECT 1 FROM content_reports cr WHERE cr.target_type = 'post' AND cr.target_id = p.id AND cr.status = 'pending')`);
+    where.push(
+      `NOT EXISTS (SELECT 1 FROM content_reports cr WHERE cr.target_type = 'post' AND cr.target_id = p.id AND cr.status = 'pending')`,
+    );
 
     // In feed/discovery, exclude expired Rush Hour posts and closed or expired Vote posts.
     // Note: If viewing a profile feed (authorHandle set), closed/expired vote posts remain available in post history!
     const nowIso = new Date().toISOString();
     if (!data.authorHandle) {
       where.push(`(p.is_rush_hour = 0 OR p.rush_hour_ends_at > '${nowIso}')`);
-      where.push(`(p.is_vote_closed = 0 AND (p.vote_ends_at IS NULL OR p.vote_ends_at > '${nowIso}'))`);
+      where.push(
+        `(p.is_vote_closed = 0 AND (p.vote_ends_at IS NULL OR p.vote_ends_at > '${nowIso}'))`,
+      );
     }
 
     const { results: rows } = await db
@@ -411,9 +415,10 @@ export const createPost = createServerFn({ method: "POST" })
     const rushEndsAt = data.rushMinutes
       ? new Date(Date.now() + data.rushMinutes * 60_000).toISOString()
       : null;
-    const voteEndsAt = data.vote && data.voteDays
-      ? new Date(Date.now() + data.voteDays * 24 * 60 * 60_000).toISOString()
-      : null;
+    const voteEndsAt =
+      data.vote && data.voteDays
+        ? new Date(Date.now() + data.voteDays * 24 * 60 * 60_000).toISOString()
+        : null;
 
     const statements = [];
     if (data.hashtag) {
@@ -429,7 +434,15 @@ export const createPost = createServerFn({ method: "POST" })
           `INSERT INTO posts (id, author_id, body, is_rush_hour, rush_hour_ends_at, vote_ends_at, hashtag_slug)
            VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
-        .bind(postId, profile.id, data.text, rushEndsAt ? 1 : 0, rushEndsAt, voteEndsAt, data.hashtag ?? null),
+        .bind(
+          postId,
+          profile.id,
+          data.text,
+          rushEndsAt ? 1 : 0,
+          rushEndsAt,
+          voteEndsAt,
+          data.hashtag ?? null,
+        ),
     );
     data.mediaIds.forEach((mediaId, position) =>
       statements.push(
@@ -483,12 +496,17 @@ export const castVote = createServerFn({ method: "POST" })
       if (existingVote) return { ok: true };
 
       const post = await db
-        .prepare("SELECT is_vote_closed, vote_ends_at FROM posts WHERE id = ? AND deleted_at IS NULL")
+        .prepare(
+          "SELECT is_vote_closed, vote_ends_at FROM posts WHERE id = ? AND deleted_at IS NULL",
+        )
         .bind(data.postId)
         .first<{ is_vote_closed: number; vote_ends_at: string | null }>();
 
       if (!post) throw new Error("Post not found.");
-      if (post.is_vote_closed || (post.vote_ends_at && new Date(post.vote_ends_at).getTime() <= Date.now())) {
+      if (
+        post.is_vote_closed ||
+        (post.vote_ends_at && new Date(post.vote_ends_at).getTime() <= Date.now())
+      ) {
         throw new Error("Voting is closed for this post.");
       }
       throw new Error("That choice is no longer available.");
@@ -498,7 +516,9 @@ export const castVote = createServerFn({ method: "POST" })
   });
 
 export const closeVotePost = createServerFn({ method: "POST" })
-  .inputValidator((input: { postId: string }) => z.object({ postId: z.string().uuid() }).parse(input))
+  .inputValidator((input: { postId: string }) =>
+    z.object({ postId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data }) => {
     const { requireViewer } = await import("./auth.server");
     const { db, profile } = await requireViewer(getRequest());
@@ -507,7 +527,8 @@ export const closeVotePost = createServerFn({ method: "POST" })
       .bind(data.postId)
       .first<{ author_id: string }>();
     if (!post) throw new Error("Post not found.");
-    if (post.author_id !== profile.id) throw new Error("Only the post author can mark voting as Done.");
+    if (post.author_id !== profile.id)
+      throw new Error("Only the post author can mark voting as Done.");
     await db
       .prepare("UPDATE posts SET is_vote_closed = 1, updated_at = ? WHERE id = ?")
       .bind(new Date().toISOString(), data.postId)
@@ -516,7 +537,9 @@ export const closeVotePost = createServerFn({ method: "POST" })
   });
 
 export const deletePost = createServerFn({ method: "POST" })
-  .inputValidator((input: { postId: string }) => z.object({ postId: z.string().uuid() }).parse(input))
+  .inputValidator((input: { postId: string }) =>
+    z.object({ postId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data }) => {
     const { requireViewer } = await import("./auth.server");
     const { db, profile } = await requireViewer(getRequest());
@@ -525,7 +548,8 @@ export const deletePost = createServerFn({ method: "POST" })
       .bind(data.postId)
       .first<{ author_id: string }>();
     if (!post) throw new Error("Post not found.");
-    if (post.author_id !== profile.id) throw new Error("Only the post author can delete this post.");
+    if (post.author_id !== profile.id)
+      throw new Error("Only the post author can delete this post.");
     const nowIso = new Date().toISOString();
     await db.batch([
       db.prepare("UPDATE posts SET deleted_at = ? WHERE id = ?").bind(nowIso, data.postId),
