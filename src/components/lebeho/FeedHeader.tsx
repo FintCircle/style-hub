@@ -83,13 +83,7 @@ export function FeedHeader() {
         <div className="absolute right-10 flex items-center gap-1">
           {isSignedIn && <NotificationBell />}
           {isAdmin && (
-            <Button
-              asChild
-              variant="ghost"
-              size="icon"
-              className="rounded-full"
-              title="Admin"
-            >
+            <Button asChild variant="ghost" size="icon" className="rounded-full" title="Admin">
               <Link to="/admin" aria-label="Open admin area">
                 <ShieldCheck className="size-5" strokeWidth={1.5} />
               </Link>

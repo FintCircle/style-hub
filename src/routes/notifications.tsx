@@ -1,7 +1,15 @@
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Bell, CheckCheck, Heart, MessageSquare, Sparkles, MessageCircle } from "lucide-react";
+import {
+  ArrowLeft,
+  Bell,
+  CheckCheck,
+  Heart,
+  MessageSquare,
+  Sparkles,
+  MessageCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -110,7 +118,8 @@ function NotificationsPage() {
             <Bell className="mx-auto size-10 text-muted-foreground/50" strokeWidth={1.5} />
             <h2 className="mt-4 font-editorial text-2xl">No notifications yet</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              When people left thoughts on your look or boosted your stylist thoughts, you'll see them here.
+              When people left thoughts on your look or boosted your stylist thoughts, you'll see
+              them here.
             </p>
           </div>
         ) : (
