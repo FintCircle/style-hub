@@ -18,10 +18,13 @@ function placeholders(n: number) {
 
 type PostRow = {
   id: string;
+  author_id: string;
   body: string;
   created_at: string;
   rush_hour_ends_at: string | null;
   is_rush_hour: number;
+  is_vote_closed: number;
+  vote_ends_at: string | null;
   hashtag_slug: string | null;
   thoughts_closed: number;
   display_name: string;
@@ -166,9 +169,21 @@ export const listFeed = createServerFn({ method: "POST" })
       binds.push(data.authorHandle.replace(/^@/, "").toLowerCase());
     }
 
+    // Exclude reported posts that have pending reports in content_reports
+    where.push(`NOT EXISTS (SELECT 1 FROM content_reports cr WHERE cr.target_type = 'post' AND cr.target_id = p.id AND cr.status = 'pending')`);
+
+    // In feed/discovery, exclude expired Rush Hour posts and closed or expired Vote posts.
+    // Note: If viewing a profile feed (authorHandle set), closed/expired vote posts remain available in post history!
+    const nowIso = new Date().toISOString();
+    if (!data.authorHandle) {
+      where.push(`(p.is_rush_hour = 0 OR p.rush_hour_ends_at > '${nowIso}')`);
+      where.push(`(p.is_vote_closed = 0 AND (p.vote_ends_at IS NULL OR p.vote_ends_at > '${nowIso}'))`);
+    }
+
     const { results: rows } = await db
       .prepare(
-        `SELECT p.id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour, p.hashtag_slug,
+        `SELECT p.id, p.author_id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour,
+          p.is_vote_closed, p.vote_ends_at, p.hashtag_slug,
           p.thoughts_closed, pr.display_name, pr.username, pr.profile_image_url,
           (SELECT COUNT(*) FROM thoughts t WHERE t.post_id = p.id AND t.deleted_at IS NULL AND t.is_hidden = 0) AS thought_count
         FROM posts p JOIN profiles pr ON pr.id = p.author_id
@@ -219,10 +234,15 @@ async function hydratePosts(
       : Promise.resolve({ results: [] as { post_id: string; choice_id: string }[] }),
   ]);
 
+  const nowMs = Date.now();
   const posts: Post[] = rows.map((r) => {
     const vote = choices.results
       .filter((c) => c.post_id === r.id)
       .map((c) => ({ id: c.id, label: c.label, votes: Number(c.votes) }));
+    const voteEndsAtMs = r.vote_ends_at ? new Date(r.vote_ends_at).getTime() : undefined;
+    const isVoteExpired = voteEndsAtMs ? voteEndsAtMs <= nowMs : false;
+    const isVoteClosed = Boolean(r.is_vote_closed) || isVoteExpired;
+
     const post: Post = {
       id: r.id,
       author: r.display_name,
@@ -234,6 +254,9 @@ async function hydratePosts(
       thoughts: [],
       thoughtCount: Number(r.thought_count),
       thoughtsClosed: Boolean(r.thoughts_closed),
+      isVoteClosed,
+      voteEndsAt: voteEndsAtMs,
+      isAuthor: viewerId ? r.author_id === viewerId : false,
       live: true,
     };
     if (r.hashtag_slug) post.hashtag = r.hashtag_slug;
@@ -247,7 +270,8 @@ async function hydratePosts(
   return posts;
 }
 
-const POST_SELECT = `SELECT p.id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour, p.hashtag_slug,
+const POST_SELECT = `SELECT p.id, p.author_id, p.body, p.created_at, p.rush_hour_ends_at, p.is_rush_hour,
+  p.is_vote_closed, p.vote_ends_at, p.hashtag_slug,
   p.thoughts_closed, pr.display_name, pr.username, pr.profile_image_url,
   (SELECT COUNT(*) FROM thoughts t WHERE t.post_id = p.id AND t.deleted_at IS NULL AND t.is_hidden = 0) AS thought_count
 FROM posts p JOIN profiles pr ON pr.id = p.author_id`;
@@ -355,6 +379,7 @@ const createPostSchema = z.object({
     .optional(),
   hashtagName: z.string().max(40).optional(),
   vote: z.array(z.string().trim().min(1).max(80)).min(2).max(6).optional(),
+  voteDays: z.number().int().min(1).max(365).optional(),
   rushMinutes: z
     .number()
     .int()
@@ -386,6 +411,10 @@ export const createPost = createServerFn({ method: "POST" })
     const rushEndsAt = data.rushMinutes
       ? new Date(Date.now() + data.rushMinutes * 60_000).toISOString()
       : null;
+    const voteEndsAt = data.vote && data.voteDays
+      ? new Date(Date.now() + data.voteDays * 24 * 60 * 60_000).toISOString()
+      : null;
+
     const statements = [];
     if (data.hashtag) {
       statements.push(
@@ -397,10 +426,10 @@ export const createPost = createServerFn({ method: "POST" })
     statements.push(
       db
         .prepare(
-          `INSERT INTO posts (id, author_id, body, is_rush_hour, rush_hour_ends_at, hashtag_slug)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO posts (id, author_id, body, is_rush_hour, rush_hour_ends_at, vote_ends_at, hashtag_slug)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         )
-        .bind(postId, profile.id, data.text, rushEndsAt ? 1 : 0, rushEndsAt, data.hashtag ?? null),
+        .bind(postId, profile.id, data.text, rushEndsAt ? 1 : 0, rushEndsAt, voteEndsAt, data.hashtag ?? null),
     );
     data.mediaIds.forEach((mediaId, position) =>
       statements.push(
@@ -427,6 +456,17 @@ export const castVote = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { requireViewer } = await import("./auth.server");
     const { db, profile } = await requireViewer(getRequest());
+
+    const post = await db
+      .prepare("SELECT is_vote_closed, vote_ends_at FROM posts WHERE id = ? AND deleted_at IS NULL")
+      .bind(data.postId)
+      .first<{ is_vote_closed: number; vote_ends_at: string | null }>();
+    if (!post) throw new Error("Post not found.");
+    if (post.is_vote_closed) throw new Error("Voting is closed for this post.");
+    if (post.vote_ends_at && new Date(post.vote_ends_at).getTime() <= Date.now()) {
+      throw new Error("Voting period has ended.");
+    }
+
     const choice = await db
       .prepare("SELECT 1 FROM vote_choices WHERE id = ? AND post_id = ?")
       .bind(data.choiceId, data.postId)
@@ -436,6 +476,43 @@ export const castVote = createServerFn({ method: "POST" })
       .prepare("INSERT OR IGNORE INTO votes (post_id, user_id, choice_id) VALUES (?, ?, ?)")
       .bind(data.postId, profile.id, data.choiceId)
       .run();
+    return { ok: true };
+  });
+
+export const closeVotePost = createServerFn({ method: "POST" })
+  .inputValidator((input: { postId: string }) => z.object({ postId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const { requireViewer } = await import("./auth.server");
+    const { db, profile } = await requireViewer(getRequest());
+    const post = await db
+      .prepare("SELECT author_id FROM posts WHERE id = ? AND deleted_at IS NULL")
+      .bind(data.postId)
+      .first<{ author_id: string }>();
+    if (!post) throw new Error("Post not found.");
+    if (post.author_id !== profile.id) throw new Error("Only the post author can mark voting as Done.");
+    await db
+      .prepare("UPDATE posts SET is_vote_closed = 1, updated_at = ? WHERE id = ?")
+      .bind(new Date().toISOString(), data.postId)
+      .run();
+    return { ok: true };
+  });
+
+export const deletePost = createServerFn({ method: "POST" })
+  .inputValidator((input: { postId: string }) => z.object({ postId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const { requireViewer } = await import("./auth.server");
+    const { db, profile } = await requireViewer(getRequest());
+    const post = await db
+      .prepare("SELECT author_id FROM posts WHERE id = ? AND deleted_at IS NULL")
+      .bind(data.postId)
+      .first<{ author_id: string }>();
+    if (!post) throw new Error("Post not found.");
+    if (post.author_id !== profile.id) throw new Error("Only the post author can delete this post.");
+    const nowIso = new Date().toISOString();
+    await db.batch([
+      db.prepare("UPDATE posts SET deleted_at = ? WHERE id = ?").bind(nowIso, data.postId),
+      db.prepare("UPDATE thoughts SET deleted_at = ? WHERE post_id = ?").bind(nowIso, data.postId),
+    ]);
     return { ok: true };
   });
 

@@ -54,6 +54,7 @@ function Create() {
   const [text, setText] = useState("");
   const [withVote, setWithVote] = useState(false);
   const [choices, setChoices] = useState(["", ""]);
+  const [voteDays, setVoteDays] = useState<number | undefined>(undefined);
   const [rush, setRush] = useState(false);
   const [minutes, setMinutes] = useState(30);
   const [hashtagInput, setHashtagInput] = useState("");
@@ -177,7 +178,7 @@ function Create() {
           mediaIds: uploaded.map((u) => u.id),
           ...(selectedHashtag ? { hashtag: selectedHashtag } : {}),
           ...(hashtagName ? { hashtagName } : {}),
-          ...(withVote ? { vote: voteChoices } : {}),
+          ...(withVote ? { vote: voteChoices, voteDays } : {}),
           ...(rush ? { rushMinutes: minutes } : {}),
         },
       });
@@ -369,7 +370,7 @@ function Create() {
             </label>
 
             {withVote && (
-              <div className="mt-4 space-y-2">
+              <div className="mt-4 space-y-3">
                 {choices.map((c, i) => (
                   <input
                     key={i}
@@ -390,6 +391,31 @@ function Create() {
                     <Plus className="size-3.5" /> Add choice
                   </button>
                 )}
+                <div className="pt-2">
+                  <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Voting duration</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {[
+                      { label: "No limit", value: undefined },
+                      { label: "1 day", value: 1 },
+                      { label: "3 days", value: 3 },
+                      { label: "7 days", value: 7 },
+                    ].map((opt) => (
+                      <button
+                        key={opt.label}
+                        type="button"
+                        onClick={() => setVoteDays(opt.value)}
+                        className={
+                          "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors " +
+                          (voteDays === opt.value
+                            ? "border-foreground bg-primary text-primary-foreground"
+                            : "border-border text-muted-foreground hover:border-foreground/50")
+                        }
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 

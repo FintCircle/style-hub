@@ -1,5 +1,8 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { MessageSquareQuote, Timer } from "lucide-react";
+import { Check, MessageSquareQuote, Timer, Trash2 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import type { Post } from "@/lib/types";
 import { VoteBlock } from "./VoteBlock";
 import { Countdown, useCountdown } from "./Countdown";
@@ -8,10 +11,49 @@ import { PostImageGallery } from "./PostImageGallery";
 import { HashtagLink } from "./HashtagLink";
 import { ReportButton } from "./ReportButton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { closeVotePost, deletePost } from "@/lib/lebeho.functions";
 
 export function PostCard({ post }: { post: Post }) {
   const remaining = useCountdown(post.rushEndsAt);
-  const live = Boolean(post.rushEndsAt) && (remaining === null || remaining > 0);
+  const liveRush = Boolean(post.rushEndsAt) && (remaining === null || remaining > 0);
+  const queryClient = useQueryClient();
+  const [closing, setClosing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleCloseVote() {
+    if (closing) return;
+    setClosing(true);
+    try {
+      await closeVotePost({ data: { postId: post.id } });
+      toast.success("Voting marked as Done.");
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ["post", post.id] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not close vote.");
+    } finally {
+      setClosing(false);
+    }
+  }
+
+  async function handleDeletePost() {
+    if (deleting) return;
+    if (!window.confirm("Are you sure you want to delete this post? All thoughts left on it will also be deleted.")) {
+      return;
+    }
+    setDeleting(true);
+    try {
+      await deletePost({ data: { postId: post.id } });
+      toast.success("Post deleted.");
+      queryClient.invalidateQueries({ queryKey: ["feed"] });
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete post.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   return (
     <article className="border-b border-border px-5 py-8">
@@ -52,7 +94,7 @@ export function PostCard({ post }: { post: Post }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {live && (
+          {liveRush && (
             <span className="flex items-center gap-1.5 rounded-full border border-rush/50 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-rush">
               <Timer className="size-3" /> Rush
             </span>
@@ -78,23 +120,55 @@ export function PostCard({ post }: { post: Post }) {
           choices={post.vote}
           postId={post.id}
           live={Boolean(post.live)}
+          isVoteClosed={post.isVoteClosed}
           viewerVote={post.viewerVote}
         />
       )}
-      {live && post.rushEndsAt && (
+      {liveRush && post.rushEndsAt && (
         <p className="mt-4 text-sm text-rush">
           Closes in <Countdown endsAt={post.rushEndsAt} className="font-semibold" />
         </p>
       )}
 
-      <Link
-        to="/posts/$postId"
-        params={{ postId: post.id }}
-        className="mt-5 flex w-fit items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <MessageSquareQuote className="size-4" strokeWidth={1.5} />{" "}
-        {post.thoughtCount ?? post.thoughts.length} Stylist thoughts
-      </Link>
+      <div className="mt-5 flex items-center justify-between gap-4">
+        <Link
+          to="/posts/$postId"
+          params={{ postId: post.id }}
+          className="flex w-fit items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <MessageSquareQuote className="size-4" strokeWidth={1.5} />{" "}
+          {post.thoughtCount ?? post.thoughts.length} Stylist thoughts
+        </Link>
+
+        {post.isAuthor && (
+          <div className="flex items-center gap-2">
+            {post.vote && !post.isVoteClosed && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCloseVote}
+                disabled={closing}
+                className="h-7 rounded-full text-xs"
+              >
+                <Check className="mr-1 size-3" />
+                {closing ? "Closing…" : "Done"}
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleDeletePost}
+              disabled={deleting}
+              className="h-7 rounded-full text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="size-3.5" />
+              <span className="sr-only">Delete post</span>
+            </Button>
+          </div>
+        )}
+      </div>
     </article>
   );
 }

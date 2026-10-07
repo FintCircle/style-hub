@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { LazyPostCard } from "@/components/lebeho/LazyPostCard";
 import type { Post, Profile, ProfileThought, Reel } from "@/lib/types";
 
-const tabs = ["Posts", "Thoughts", "Reels", "About"] as const;
+const tabs = ["Posts", "Votes", "Thoughts", "Reels", "About"] as const;
 
 export function ProfileStats({ stats }: { stats?: Profile["stats"] }) {
   if (!stats) return null;
@@ -34,6 +34,8 @@ export function ProfileActivity({
   loading?: boolean;
 }) {
   const [tab, setTab] = useState<Exclude<(typeof tabs)[number], "About">>("Posts");
+
+  const votePosts = posts.filter((p) => Boolean(p.vote));
 
   return (
     <>
@@ -72,6 +74,14 @@ export function ProfileActivity({
                 ))
               ) : (
                 <Empty>No posts yet.</Empty>
+              ))}
+            {tab === "Votes" &&
+              (votePosts.length ? (
+                votePosts.map((post, index) => (
+                  <LazyPostCard key={post.id} post={post} priority={index < 2} />
+                ))
+              ) : (
+                <Empty>No Vote posts yet.</Empty>
               ))}
             {tab === "Thoughts" &&
               (thoughts.length ? (

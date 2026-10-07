@@ -41,6 +41,12 @@ export type Post = {
   thoughts: Thought[];
   /** Prevents new opening Thoughts without affecting existing conversations. */
   thoughtsClosed?: boolean;
+  /** True when voting has been marked Done or voting period has expired. */
+  isVoteClosed?: boolean;
+  /** epoch ms when voting closes automatically; undefined = no automatic expiry */
+  voteEndsAt?: number;
+  /** Indicates whether current viewer is the author of this post. */
+  isAuthor?: boolean;
   /** Stored in D1 (vs. sample content). */
   live?: boolean;
   /** Visible Thought count when the list itself isn't loaded. */

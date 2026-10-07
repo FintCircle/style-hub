@@ -162,6 +162,7 @@ function PostView({ post, children }: { post: Post; children: React.ReactNode })
             choices={post.vote}
             postId={post.id}
             live={Boolean(post.live)}
+            isVoteClosed={post.isVoteClosed}
             viewerVote={post.viewerVote}
           />
         )}
