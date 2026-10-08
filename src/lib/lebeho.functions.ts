@@ -300,10 +300,7 @@ async function hydratePosts(
     if (isVoteExpired && !r.is_vote_closed) {
       void (async () => {
         try {
-          await db
-            .prepare("UPDATE posts SET is_vote_closed = 1 WHERE id = ?")
-            .bind(r.id)
-            .run();
+          await db.prepare("UPDATE posts SET is_vote_closed = 1 WHERE id = ?").bind(r.id).run();
           const { sendNotification } = await import("../server/notifications");
           await sendNotification(db, {
             recipientId: r.author_id,

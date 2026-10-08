@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Bold, FileVideo, ImagePlus, Italic, List, Plus, Quote, Timer, Upload, X } from "lucide-react";
+import {
+  Bold,
+  FileVideo,
+  ImagePlus,
+  Italic,
+  List,
+  Plus,
+  Quote,
+  Timer,
+  Upload,
+  X,
+} from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BottomNav } from "@/components/lebeho/BottomNav";
@@ -268,7 +279,9 @@ function Create() {
         {mode === "post" ? (
           <div className="mt-7">
             <div className="flex items-center gap-1.5 py-2 border-b border-border mb-3 text-xs text-muted-foreground">
-              <span className="mr-1 text-[11px] uppercase tracking-wider font-semibold">Format:</span>
+              <span className="mr-1 text-[11px] uppercase tracking-wider font-semibold">
+                Format:
+              </span>
               <button
                 type="button"
                 onClick={() => applyFormatting("**", "**")}

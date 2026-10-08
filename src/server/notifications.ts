@@ -5,7 +5,14 @@ export async function sendNotification(
   params: {
     recipientId: string;
     actorId: string;
-    type: "thought" | "thought_reply" | "boost" | "reel_like" | "poll_ended" | "rush_ending" | "content_report";
+    type:
+      | "thought"
+      | "thought_reply"
+      | "boost"
+      | "reel_like"
+      | "poll_ended"
+      | "rush_ending"
+      | "content_report";
     targetType: "post" | "reel";
     targetId: string;
     thoughtId?: string;
