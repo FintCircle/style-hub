@@ -267,8 +267,54 @@ async function hydratePosts(
     if (vote.length) post.vote = vote;
     const mine = myVotes.results.find((v) => v.post_id === r.id)?.choice_id;
     if (mine) post.viewerVote = mine;
-    if (r.is_rush_hour && r.rush_hour_ends_at)
-      post.rushEndsAt = new Date(r.rush_hour_ends_at).getTime();
+    if (r.is_rush_hour && r.rush_hour_ends_at) {
+      const rushEndsAt = new Date(r.rush_hour_ends_at).getTime();
+      post.rushEndsAt = rushEndsAt;
+      const remainingMs = rushEndsAt - nowMs;
+      if (remainingMs > 0 && remainingMs <= 5 * 60 * 1000) {
+        void (async () => {
+          try {
+            const alreadyNotified = await db
+              .prepare(
+                "SELECT 1 FROM notifications WHERE recipient_id = ? AND type = 'rush_ending' AND target_id = ?",
+              )
+              .bind(r.author_id, r.id)
+              .first();
+            if (!alreadyNotified) {
+              const { sendNotification } = await import("../server/notifications");
+              await sendNotification(db, {
+                recipientId: r.author_id,
+                actorId: r.author_id,
+                type: "rush_ending",
+                targetType: "post",
+                targetId: r.id,
+              });
+            }
+          } catch (e) {
+            console.error("Rush ending notification check failed", e);
+          }
+        })();
+      }
+    }
+
+    if (isVoteExpired && !r.is_vote_closed) {
+      void (async () => {
+        try {
+          await db.prepare("UPDATE posts SET is_vote_closed = 1 WHERE id = ?").bind(r.id).run();
+          const { sendNotification } = await import("../server/notifications");
+          await sendNotification(db, {
+            recipientId: r.author_id,
+            actorId: r.author_id,
+            type: "poll_ended",
+            targetType: "post",
+            targetId: r.id,
+          });
+        } catch (e) {
+          console.error("Poll ended notification check failed", e);
+        }
+      })();
+    }
+
     return post;
   });
   return posts;
@@ -533,6 +579,16 @@ export const closeVotePost = createServerFn({ method: "POST" })
       .prepare("UPDATE posts SET is_vote_closed = 1, updated_at = ? WHERE id = ?")
       .bind(new Date().toISOString(), data.postId)
       .run();
+
+    const { sendNotification } = await import("../server/notifications");
+    await sendNotification(db, {
+      recipientId: post.author_id,
+      actorId: profile.id,
+      type: "poll_ended",
+      targetType: "post",
+      targetId: data.postId,
+    });
+
     return { ok: true };
   });
 

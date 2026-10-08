@@ -13,16 +13,23 @@ function relativeTime(iso: string) {
 
 export type NotificationItem = {
   id: string;
-  type: "thought" | "thought_reply" | "boost" | "reel_like";
+  type:
+    | "thought"
+    | "thought_reply"
+    | "boost"
+    | "reel_like"
+    | "poll_ended"
+    | "rush_ending"
+    | "content_report";
   targetType: "post" | "reel";
   targetId: string;
-  thoughtId?: string;
+  thoughtId?: string | undefined;
   isRead: boolean;
   time: string;
   actor: {
     name: string;
     handle: string;
-    avatar?: string;
+    avatar?: string | undefined;
   };
 };
 
@@ -49,7 +56,14 @@ export const listNotifications = createServerFn({ method: "POST" }).handler(
       .bind(viewer.profile.id)
       .all<{
         id: string;
-        type: "thought" | "thought_reply" | "boost" | "reel_like";
+        type:
+          | "thought"
+          | "thought_reply"
+          | "boost"
+          | "reel_like"
+          | "poll_ended"
+          | "rush_ending"
+          | "content_report";
         target_type: "post" | "reel";
         target_id: string;
         thought_id: string | null;

@@ -144,7 +144,7 @@ export async function setThoughtBoosted(
 
     const { sendNotification } = await import("./notifications");
     await sendNotification(db, {
-      recipientId: participants.thought_author_id,
+      recipientId: participants.post_author_id,
       actorId: actor.id,
       type: "boost",
       targetType: "post",
@@ -250,12 +250,29 @@ export async function reportThought(
     .bind(thoughtId, actor.id)
     .first();
   if (existing) throw new Error("You already have an active report for this Thought");
+  const reportId = id();
   await db
     .prepare(
       "INSERT INTO thought_reports (id, thought_id, reporter_id, reason, details) VALUES (?, ?, ?, ?, ?)",
     )
-    .bind(id(), thoughtId, actor.id, reason, details?.trim() || null)
+    .bind(reportId, thoughtId, actor.id, reason, details?.trim() || null)
     .run();
+
+  const admin = await db
+    .prepare("SELECT id FROM profiles WHERE LOWER(email) = 'mderrickm00@gmail.com'")
+    .bind()
+    .first<{ id: string }>();
+  if (admin) {
+    const { sendNotification } = await import("./notifications");
+    await sendNotification(db, {
+      recipientId: admin.id,
+      actorId: actor.id,
+      type: "content_report",
+      targetType: "post",
+      targetId: participants.post_id,
+      thoughtId,
+    });
+  }
 }
 
 export async function blockThoughtAuthor(db: D1Database, clerkUserId: string, thoughtId: string) {

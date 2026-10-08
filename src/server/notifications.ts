@@ -5,13 +5,28 @@ export async function sendNotification(
   params: {
     recipientId: string;
     actorId: string;
-    type: "thought" | "thought_reply" | "boost" | "reel_like";
+    type:
+      | "thought"
+      | "thought_reply"
+      | "boost"
+      | "reel_like"
+      | "poll_ended"
+      | "rush_ending"
+      | "content_report";
     targetType: "post" | "reel";
     targetId: string;
     thoughtId?: string;
   },
 ) {
-  if (!params.recipientId || !params.actorId || params.recipientId === params.actorId) {
+  if (!params.recipientId || !params.actorId) {
+    return;
+  }
+  // Avoid self-notification except for system alerts like poll_ended or rush_ending
+  if (
+    params.recipientId === params.actorId &&
+    params.type !== "poll_ended" &&
+    params.type !== "rush_ending"
+  ) {
     return;
   }
   const id = crypto.randomUUID();

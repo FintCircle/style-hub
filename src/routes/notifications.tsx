@@ -2,6 +2,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import {
+  AlertTriangle,
   ArrowLeft,
   Bell,
   CheckCheck,
@@ -9,6 +10,7 @@ import {
   MessageSquare,
   Sparkles,
   MessageCircle,
+  Timer,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -157,14 +159,25 @@ function NotificationRow({
     text = "left a Thought on your post";
   } else if (type === "thought_reply") {
     Icon = MessageSquare;
-    text = "replied to your Thought";
+    text = "replied to a Thought";
   } else if (type === "boost") {
     Icon = Sparkles;
-    text = "boosted your Thought";
+    text = "boosted a Thought on your post";
   } else if (type === "reel_like") {
     Icon = Heart;
     text = "liked your Reel";
+  } else if (type === "poll_ended") {
+    Icon = CheckCheck;
+    text = "The poll on your post has ended";
+  } else if (type === "rush_ending") {
+    Icon = Timer;
+    text = "Your Rush Hour countdown is ending soon";
+  } else if (type === "content_report") {
+    Icon = AlertTriangle;
+    text = "reported content for review";
   }
+
+  const cleanHandle = actor.handle.replace(/^@/, "");
 
   return (
     <button
@@ -176,12 +189,20 @@ function NotificationRow({
     >
       <div className="flex items-start gap-3 min-w-0">
         <div className="relative shrink-0">
-          <Avatar className="size-10">
-            <AvatarImage src={actor.avatar} alt={actor.name} />
-            <AvatarFallback className="bg-primary font-editorial text-xs text-primary-foreground">
-              {(actor.name || "?")[0]?.toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <Link
+            to="/profile/$handle"
+            params={{ handle: cleanHandle }}
+            onClick={(e) => e.stopPropagation()}
+            className="block rounded-full focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={`View ${actor.name}'s profile`}
+          >
+            <Avatar className="size-10 hover:opacity-90 transition-opacity">
+              <AvatarImage src={actor.avatar} alt={actor.name} />
+              <AvatarFallback className="bg-primary font-editorial text-xs text-primary-foreground">
+                {(actor.name || "?")[0]?.toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          </Link>
           <div className="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-background p-0.5 text-foreground shadow-sm">
             <Icon className="size-3 text-rush" strokeWidth={2} />
           </div>
