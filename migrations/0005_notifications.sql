@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,
   recipient_id TEXT NOT NULL REFERENCES profiles(id),
   actor_id TEXT NOT NULL REFERENCES profiles(id),
-  type TEXT NOT NULL CHECK (type IN ('thought', 'thought_reply', 'boost', 'reel_like')),
+  type TEXT NOT NULL CHECK (type IN ('thought', 'thought_reply', 'boost', 'reel_like', 'poll_ended', 'rush_ending', 'content_report')),
   target_type TEXT NOT NULL CHECK (target_type IN ('post', 'reel')),
   target_id TEXT NOT NULL,
   thought_id TEXT REFERENCES thoughts(id),
