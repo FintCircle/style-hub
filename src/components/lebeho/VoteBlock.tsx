@@ -14,10 +14,10 @@ export function VoteBlock({
   viewerVote,
 }: {
   choices: VoteChoice[];
-  variant?: "feed" | "rush";
-  postId?: string;
-  live?: boolean;
-  isVoteClosed?: boolean;
+  variant?: "feed" | "rush" | undefined;
+  postId?: string | undefined;
+  live?: boolean | undefined;
+  isVoteClosed?: boolean | undefined;
   viewerVote?: string | undefined;
 }) {
   const [picked, setPicked] = useState<string | null>(viewerVote ?? null);

@@ -260,6 +260,7 @@ export async function reportThought(
 
   const admin = await db
     .prepare("SELECT id FROM profiles WHERE LOWER(email) = 'mderrickm00@gmail.com'")
+    .bind()
     .first<{ id: string }>();
   if (admin) {
     const { sendNotification } = await import("./notifications");

@@ -12,47 +12,47 @@ export type Reply = {
 export type Thought = {
   id: string;
   /** D1 profile id of the Thought author (live posts only), used for blocking. */
-  authorId?: string;
+  authorId?: string | undefined;
   author: string;
   handle: string;
-  authorAvatar?: string;
+  authorAvatar?: string | undefined;
   text: string;
   time: string;
   /** Community endorsement of useful advice. */
   boosts: number;
-  replies?: Reply[];
+  replies?: Reply[] | undefined;
   /** OP visibility control; hidden Thoughts remain stored but leave the public list. */
-  isHidden?: boolean;
+  isHidden?: boolean | undefined;
 };
 
 export type Post = {
   id: string;
   author: string;
   handle: string;
-  authorAvatar?: string;
+  authorAvatar?: string | undefined;
   time: string;
   text: string;
   images: string[];
   /** Optional, single discovery home for this public post. */
-  hashtag?: string;
-  vote?: VoteChoice[];
+  hashtag?: string | undefined;
+  vote?: VoteChoice[] | undefined;
   /** epoch ms when the rush window closes; undefined = normal feed post */
-  rushEndsAt?: number;
+  rushEndsAt?: number | undefined;
   thoughts: Thought[];
   /** Prevents new opening Thoughts without affecting existing conversations. */
-  thoughtsClosed?: boolean;
+  thoughtsClosed?: boolean | undefined;
   /** True when voting has been marked Done or voting period has expired. */
-  isVoteClosed?: boolean;
+  isVoteClosed?: boolean | undefined;
   /** epoch ms when voting closes automatically; undefined = no automatic expiry */
-  voteEndsAt?: number;
+  voteEndsAt?: number | undefined;
   /** Indicates whether current viewer is the author of this post. */
-  isAuthor?: boolean;
+  isAuthor?: boolean | undefined;
   /** Stored in D1 (vs. sample content). */
-  live?: boolean;
+  live?: boolean | undefined;
   /** Visible Thought count when the list itself isn't loaded. */
-  thoughtCount?: number;
+  thoughtCount?: number | undefined;
   /** Choice the signed-in viewer already picked. */
-  viewerVote?: string;
+  viewerVote?: string | undefined;
 };
 
 export type Hashtag = {

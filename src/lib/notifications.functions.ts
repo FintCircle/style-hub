@@ -23,13 +23,13 @@ export type NotificationItem = {
     | "content_report";
   targetType: "post" | "reel";
   targetId: string;
-  thoughtId?: string;
+  thoughtId?: string | undefined;
   isRead: boolean;
   time: string;
   actor: {
     name: string;
     handle: string;
-    avatar?: string;
+    avatar?: string | undefined;
   };
 };
 
