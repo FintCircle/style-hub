@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Check, MessageSquareQuote, Timer, Trash2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -7,6 +7,7 @@ import type { Post } from "@/lib/types";
 import { VoteBlock } from "./VoteBlock";
 import { Countdown, useCountdown } from "./Countdown";
 import { ProfileLink } from "./ProfileLink";
+import { FormattedText } from "./FormattedText";
 import { PostImageGallery } from "./PostImageGallery";
 import { HashtagLink } from "./HashtagLink";
 import { ReportButton } from "./ReportButton";
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { closeVotePost, deletePost } from "@/lib/lebeho.functions";
 
 export function PostCard({ post }: { post: Post }) {
+  const navigate = useNavigate();
   const remaining = useCountdown(post.rushEndsAt);
   const liveRush = Boolean(post.rushEndsAt) && (remaining === null || remaining > 0);
   const queryClient = useQueryClient();
@@ -111,29 +113,17 @@ export function PostCard({ post }: { post: Post }) {
         </div>
       </header>
 
-      {post.text &&
-        (() => {
-          const MAX_TEXT_LENGTH = 180;
-          const isLongText = post.text.length > MAX_TEXT_LENGTH;
-          const displayText = isLongText ? post.text.slice(0, MAX_TEXT_LENGTH).trim() : post.text;
-
-          return (
-            <Link
-              to="/posts/$postId"
-              params={{ postId: post.id }}
-              className="mt-4 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary group"
-            >
-              <p className="text-[17px] leading-relaxed break-words">
-                {displayText}
-                {isLongText && (
-                  <span className="ml-1 font-medium text-muted-foreground group-hover:text-foreground underline underline-offset-2">
-                    … read more
-                  </span>
-                )}
-              </p>
-            </Link>
-          );
-        })()}
+      {post.text && (
+        <div className="mt-4">
+          <FormattedText
+            text={post.text}
+            maxChars={280}
+            onReadMore={() => {
+              void navigate({ to: "/posts/$postId", params: { postId: post.id } });
+            }}
+          />
+        </div>
+      )}
       {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-3" />}
 
       <PostImageGallery images={post.images} author={post.author} />

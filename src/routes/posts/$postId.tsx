@@ -5,6 +5,7 @@ import { ArrowLeft, Timer } from "lucide-react";
 import { Countdown, useCountdown } from "@/components/lebeho/Countdown";
 import { BottomNav } from "@/components/lebeho/BottomNav";
 import { ProfileLink } from "@/components/lebeho/ProfileLink";
+import { FormattedText } from "@/components/lebeho/FormattedText";
 import { Thoughts } from "@/components/lebeho/Thoughts";
 import { VoteBlock } from "@/components/lebeho/VoteBlock";
 import { PostImageGallery } from "@/components/lebeho/PostImageGallery";
@@ -154,7 +155,7 @@ function PostView({ post, children }: { post: Post; children: React.ReactNode })
             </span>
           )}
         </header>
-        {post.text && <p className="mt-5 text-[18px] leading-relaxed break-words">{post.text}</p>}
+        {post.text && <FormattedText text={post.text} className="mt-5" />}
         {post.hashtag && <HashtagLink hashtag={post.hashtag} className="mt-4" />}
         <PostImageGallery images={post.images} author={post.author} />
         {post.vote && (

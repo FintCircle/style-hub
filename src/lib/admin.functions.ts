@@ -355,12 +355,13 @@ export const reportContent = createServerFn({ method: "POST" })
       .bind(profile.id, data.targetType, data.targetId)
       .first();
     if (existing) return { ok: true };
+    const reportId = crypto.randomUUID();
     await db
       .prepare(
         "INSERT INTO content_reports (id, reporter_id, target_type, target_id, reason, details) VALUES (?, ?, ?, ?, ?, ?)",
       )
       .bind(
-        crypto.randomUUID(),
+        reportId,
         profile.id,
         data.targetType,
         data.targetId,

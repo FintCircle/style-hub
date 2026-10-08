@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { FileVideo, ImagePlus, Timer, Plus, Upload, X } from "lucide-react";
+import { Bold, FileVideo, ImagePlus, Italic, List, Plus, Quote, Timer, Upload, X } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BottomNav } from "@/components/lebeho/BottomNav";
@@ -64,8 +64,30 @@ function Create() {
   const [uploadError, setUploadError] = useState<string | undefined>();
   const [publishing, setPublishing] = useState(false);
   const queryClient = useQueryClient();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const reelInputRef = useRef<HTMLInputElement>(null);
+
+  function applyFormatting(prefix: string, suffix = "") {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = text.substring(start, end);
+    const replacement = `${prefix}${selectedText || "text"}${suffix}`;
+
+    const newText = text.substring(0, start) + replacement + text.substring(end);
+    setText(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + prefix.length,
+        start + prefix.length + (selectedText ? selectedText.length : 4),
+      );
+    }, 0);
+  }
   const selectedMediaRef = useRef<{ photos: MediaPreview[]; reel?: MediaPreview | undefined }>({
     photos: [],
   });
@@ -245,7 +267,44 @@ function Create() {
 
         {mode === "post" ? (
           <div className="mt-7">
+            <div className="flex items-center gap-1.5 py-2 border-b border-border mb-3 text-xs text-muted-foreground">
+              <span className="mr-1 text-[11px] uppercase tracking-wider font-semibold">Format:</span>
+              <button
+                type="button"
+                onClick={() => applyFormatting("**", "**")}
+                className="p-1.5 rounded hover:bg-secondary transition-colors"
+                title="Bold (**text**)"
+              >
+                <Bold className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("*", "*")}
+                className="p-1.5 rounded hover:bg-secondary transition-colors"
+                title="Italic (*text*)"
+              >
+                <Italic className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("- ")}
+                className="p-1.5 rounded hover:bg-secondary transition-colors"
+                title="Bullet List (- item)"
+              >
+                <List className="size-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => applyFormatting("> ")}
+                className="p-1.5 rounded hover:bg-secondary transition-colors"
+                title="Quote (> text)"
+              >
+                <Quote className="size-3.5" />
+              </button>
+            </div>
+
             <textarea
+              ref={textareaRef}
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={5}
