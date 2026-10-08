@@ -816,5 +816,23 @@ export const setReelLiked = createServerFn({ method: "POST" })
       )
       .bind(data.reelId, profile.id)
       .run();
+
+    if (data.liked) {
+      const reel = await db
+        .prepare("SELECT author_id FROM reels WHERE id = ? AND deleted_at IS NULL")
+        .bind(data.reelId)
+        .first<{ author_id: string }>();
+      if (reel) {
+        const { sendNotification } = await import("../server/notifications");
+        await sendNotification(db, {
+          recipientId: reel.author_id,
+          actorId: profile.id,
+          type: "reel_like",
+          targetType: "reel",
+          targetId: data.reelId,
+        });
+      }
+    }
+
     return { ok: true };
   });

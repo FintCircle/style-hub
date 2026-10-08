@@ -15,6 +15,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as CreateRouteImport } from './routes/create'
 import { Route as GuidelinesRouteImport } from './routes/guidelines'
 import { Route as JoinRouteImport } from './routes/join'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ReelsRouteImport } from './routes/reels'
@@ -54,6 +55,11 @@ const GuidelinesRoute = GuidelinesRouteImport.update({
 const JoinRoute = JoinRouteImport.update({
   id: '/join',
   path: '/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -114,6 +120,7 @@ export interface FileRoutesByFullPath {
   '/create': typeof CreateRoute
   '/guidelines': typeof GuidelinesRoute
   '/join': typeof JoinRoute
+  '/notifications': typeof NotificationsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/reels': typeof ReelsRoute
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/create': typeof CreateRoute
   '/guidelines': typeof GuidelinesRoute
   '/join': typeof JoinRoute
+  '/notifications': typeof NotificationsRoute
   '/privacy': typeof PrivacyRoute
   '/reels': typeof ReelsRoute
   '/rush': typeof RushRoute
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/create': typeof CreateRoute
   '/guidelines': typeof GuidelinesRoute
   '/join': typeof JoinRoute
+  '/notifications': typeof NotificationsRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRouteWithChildren
   '/reels': typeof ReelsRoute
@@ -170,6 +179,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/guidelines'
     | '/join'
+    | '/notifications'
     | '/privacy'
     | '/profile'
     | '/reels'
@@ -188,6 +198,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/guidelines'
     | '/join'
+    | '/notifications'
     | '/privacy'
     | '/reels'
     | '/rush'
@@ -205,6 +216,7 @@ export interface FileRouteTypes {
     | '/create'
     | '/guidelines'
     | '/join'
+    | '/notifications'
     | '/privacy'
     | '/profile'
     | '/reels'
@@ -224,6 +236,7 @@ export interface RootRouteChildren {
   CreateRoute: typeof CreateRoute
   GuidelinesRoute: typeof GuidelinesRoute
   JoinRoute: typeof JoinRoute
+  NotificationsRoute: typeof NotificationsRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRouteWithChildren
   ReelsRoute: typeof ReelsRoute
@@ -276,6 +289,13 @@ declare module '@tanstack/react-router' {
       path: '/join'
       fullPath: '/join'
       preLoaderRoute: typeof JoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -371,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   CreateRoute: CreateRoute,
   GuidelinesRoute: GuidelinesRoute,
   JoinRoute: JoinRoute,
+  NotificationsRoute: NotificationsRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRouteWithChildren,
   ReelsRoute: ReelsRoute,

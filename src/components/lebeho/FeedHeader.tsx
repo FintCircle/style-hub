@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
 import { useClerk } from "@clerk/clerk-react";
+import { useQuery } from "@tanstack/react-query";
 import { PortalLink } from "./PortalLink";
 import { useViewer } from "@/hooks/use-viewer";
-import { Menu, ShieldCheck, Timer } from "lucide-react";
+import { Bell, Menu, ShieldCheck, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getUnreadNotificationCount } from "@/lib/notifications.functions";
 import {
   Sheet,
   SheetClose,
@@ -20,6 +22,33 @@ const menuItems = [
   { to: "/privacy", label: "Privacy" },
   { to: "/guidelines", label: "Guidelines" },
 ] as const;
+
+function NotificationBell() {
+  const { data } = useQuery({
+    queryKey: ["notifications-unread"],
+    queryFn: () => getUnreadNotificationCount(),
+    refetchInterval: 30000,
+  });
+
+  const unreadCount = data?.unreadCount ?? 0;
+
+  return (
+    <Button
+      asChild
+      variant="ghost"
+      size="icon"
+      className="relative rounded-full"
+      title="Notifications"
+    >
+      <Link to="/notifications" aria-label="Open notifications">
+        <Bell className="size-5" strokeWidth={1.5} />
+        {unreadCount > 0 && (
+          <span className="absolute right-1 top-1 flex size-2.5 rounded-full bg-rush" />
+        )}
+      </Link>
+    </Button>
+  );
+}
 
 export function FeedHeader() {
   const { isSignedIn, profile, isAdmin } = useViewer();
@@ -51,19 +80,16 @@ export function FeedHeader() {
           LeBeHo
         </Link>
 
-        {isAdmin && (
-          <Button
-            asChild
-            variant="ghost"
-            size="icon"
-            className="absolute right-10 rounded-full"
-            title="Admin"
-          >
-            <Link to="/admin" aria-label="Open admin area">
-              <ShieldCheck className="size-5" strokeWidth={1.5} />
-            </Link>
-          </Button>
-        )}
+        <div className="absolute right-10 flex items-center gap-1">
+          {isSignedIn && <NotificationBell />}
+          {isAdmin && (
+            <Button asChild variant="ghost" size="icon" className="rounded-full" title="Admin">
+              <Link to="/admin" aria-label="Open admin area">
+                <ShieldCheck className="size-5" strokeWidth={1.5} />
+              </Link>
+            </Button>
+          )}
+        </div>
         <Sheet>
           <SheetTrigger asChild>
             <Button
